@@ -1,4 +1,4 @@
-async function get_visitors_statistics_group() {
+async function get_members_statistics_group() {
 	function Div_statistics_group(props){
 		return(
 			<div class="p-4 bg-white rounded-lg text-center md:p-8">
