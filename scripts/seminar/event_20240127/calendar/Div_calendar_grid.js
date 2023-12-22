@@ -40,7 +40,7 @@ function Div_calendar_grid() {
 				<p class="mb-1 text-md text-center">
 					일반: 20만원
 					<br/>
-					Web-R 회원: 15만원
+					Web-R 정회원: 15만원
 				</p>
 			</div>
 		</div>
