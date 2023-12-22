@@ -1,4 +1,4 @@
-async function get_table_members(){
+async function get_table_payments(){
 	function Div_table(props)
 	{
 		return (
@@ -14,11 +14,11 @@ async function get_table_members(){
 		)
 	}
 
-	const data = await fetch("/operation/ajax_members_table_members")
+	const data = await fetch("/operation/ajax_payments_table_payments")
 					.then(res=> { return res.json(); })
 					.then(res=> { return res; });
 
-	let table_members_options = {
+	let table_visitors_options = {
 		"dom": 'Bfrtip',
 		"buttons": ['copy', 'csv', 'excel', 'pdf', 'print'],
 		"ordering": true,
@@ -33,13 +33,13 @@ async function get_table_members(){
 		columns: data.columns,
 		columnDefs: data.columnDefs,
 		data: data.data,
-		"order": [[ 5, 'desc' ]],
-		"oLanguage": { "sInfo" : "_TOTAL_명의 회원 중 _START_ ~ _END_번째" },
+		"order": [[ 10, 'desc' ]],
+		"oLanguage": { "sInfo" : "_TOTAL_건의 결제 중 _START_ ~ _END_번째" },
 		"language": { "lengthMenu": "페이지당 _MENU_ 개씩 보기" }
 	}
+				
+	ReactDOM.render(<Div_table id="table_payments_result" />, document.getElementById("table_payments"))
+	$('#table_payments_result').DataTable(table_visitors_options);
 
-	ReactDOM.render(<Div_table id="div_table_members_sub" />, document.getElementById("table_members"))
-	$('#div_table_members_sub').DataTable(table_members_options);
-
-	document.getElementById("div_table_members_container").className = "p-4 bg-white rounded-lg md:p-8 text-center"
+	document.getElementById("div_table_payments_container").className = "p-4 bg-white rounded-lg md:p-8 text-center"
 }
