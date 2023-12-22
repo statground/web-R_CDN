@@ -24,7 +24,7 @@ function Div_graph_visitors_skeleton() {
 				<div class="p-4 rounded-lg bg-gray-50 w-full" id="graph_monthly">
 					<Div_graph_skeleton />
 				</div>
-				<div class="hidden p-4 rounded-lg bg-gray-50 w-full" id="graph_yearly">
+				<div class="hidden" id="graph_yearly">
 					<Div_graph_skeleton />
 				</div>
 			</div>
