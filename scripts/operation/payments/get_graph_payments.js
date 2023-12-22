@@ -1,10 +1,11 @@
-async function get_graph_members(type)
+async function get_graph_payments(type)
 {
 	let div_graph_monthly = document.getElementById("graph_monthly");
 	let div_graph_yearly = document.getElementById("graph_yearly");
 	let class_div_graph = "p-4 rounded-lg bg-gray-50 w-full"
 
 	let options = {
+		title: "결제액(왼쪽, 파란색) / 결제자 수(오른쪽, 빨간색)",
 		series: {
 			0: {targetAxisIndex: 0},
 			1: {targetAxisIndex: 1}
@@ -26,7 +27,7 @@ async function get_graph_members(type)
 		div_graph_yearly.className = "hidden"
 		ReactDOM.render(<Div_graph_skeleton />, document.getElementById("graph_monthly"))
 
-		const data = await fetch("/operation/ajax_members_graph")
+		const data = await fetch("/operation/ajax_payments_graph")
 						.then(res=> { return res.json(); })
 						.then(res=> { return res; });
 
@@ -37,12 +38,12 @@ async function get_graph_members(type)
 		div_graph_yearly.className = class_div_graph
 		ReactDOM.render(<Div_graph_skeleton />, document.getElementById("graph_yearly"))
 
-		const data = await fetch("/operation/ajax_members_graph")
+		const data = await fetch("/operation/ajax_payments_graph")
 						.then(res=> { return res.json(); })
 						.then(res=> { return res; });
 
 		bar(data.yearly, 'graph_yearly', options);
 	}
 
-	document.getElementById("div_graph_members_container").className = "p-4 bg-white rounded-lg md:p-8 text-center"
+	document.getElementById("div_graph_payments_container").className = "p-4 bg-white rounded-lg md:p-8 text-center"
 }
