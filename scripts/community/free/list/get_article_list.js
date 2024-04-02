@@ -29,5 +29,4 @@ async function get_article_list() {
 					.then(res=> { return res; });
 
 	ReactDOM.render(<Div_article_list data={data} />, document.getElementById("div_article_list"))
-
 }
