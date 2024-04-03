@@ -1,4 +1,4 @@
-function Div_article_list(props) {
+function Div_new_article_list(props) {
 	let category_menu = "community"
 	
 	let category_url = "/" + props.data.category_url
