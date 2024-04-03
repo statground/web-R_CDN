@@ -1,8 +1,13 @@
-function Div_article(props) {
+function Div_article_list(props) {
+	let category_menu = "community"
+	
+	let category_url = "/" + props.data.category_url
+	if (category_url == "/free") {category_url = ""}
+
 	return (
 		<div class="bg-white border-b w-full">
 			<div class="flex flex-col px-6 py-4 space-y-1 cursor-pointer hover:bg-gray-100 w-full"
-				onClick={() => window.open(props.data.category_url)}>
+				onClick={() => location.href='/' + category_menu + category_url + '/read/' + props.data.uuid + '/'}>
 				<div class="flex flex-row justify-start items-center">
 					<span class="font-bold text-sm w-fit max-w-9/12 truncate ...">
 						{props.data.title}
