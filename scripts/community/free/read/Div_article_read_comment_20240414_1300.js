@@ -8,9 +8,11 @@ function Div_article_read_comment(props) {
 				}>
 		
 				<div class="flex justify-between items-center space-x-2">
-					<div class="flex items-center">
+					<div class="flex flex-row justify-start items-center space-x-2">
 						<Span_btn_user user_nickname = {props.data.user_nickname} role = {props.data.user_role} />
 						<Span_btn_date date={props.data.created_at} />
+						<Span_btn_comment_secret toggle={props.data.is_secret} />
+						<Span_btn_my_comment toggle={props.data.check_comment_reader} />
 					</div>
 				</div>
 				<div class="text-gray-500" id={"div_comment_" + props.data.uuid}></div>
@@ -51,9 +53,11 @@ function Div_article_read_comment(props) {
 						   }>
 					
 				<div class="flex justify-between items-center space-x-2">
-					<div class="flex items-center">
+					<div class="flex flex-row justify-start items-center space-x-2">
 						<Span_btn_user user_nickname = {props.data.user_nickname} role = {props.data.user_role} />
 						<Span_btn_date date={props.data.created_at} />
+						<Span_btn_comment_secret toggle={props.data.is_secret} />
+						<Span_btn_my_comment toggle={props.data.check_comment_reader} />
 					</div>
 				</div>
 				<div class="text-gray-500" id={"div_comment_" + props.data.uuid}></div>
@@ -61,7 +65,7 @@ function Div_article_read_comment(props) {
 					{
 						check_agree_comment(props.is_secret, props.check_reader)
 						?   <button type="button" class="flex justify-center items-center text-sm text-gray-500 hover:underline font-medium"
-									onClick={() => click_reply(props.data.uuid)}>
+									onClick={() => click_btn_reply_comment(props.data.uuid)}>
 								<img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/comment_re_reply.svg" class="w-4 h-4 mr-2" />
 								대댓글
 							</button>
@@ -87,7 +91,13 @@ function Div_article_read_comment(props) {
 					}
 				</div>
 				{comment_depth2_list}
-				<div id={"div_community_read_comment_new_" + props.data.uuid} class="w-full"></div>
+				<div id={"div_community_read_comment_new_" + props.data.uuid} class="hidden">
+					{
+						check_agree_comment(props.is_secret, props.check_reader)
+						?   <Div_comment_form title={"대댓글 쓰기"} class={"mt-4 p-4 bg-white rounded-lg w-full space-y-2"} uuid_comment={props.data.uuid} />
+						:   ""
+					}
+				</div>
 			</article>
 		)
 	}
@@ -111,15 +121,13 @@ function Div_article_read_comment(props) {
 					{comment_list}
 				</div>
 
-				<div class="flex flex-row justify-center items-center p-6 text-base bg-gray-100 rounded-xl w-full" 
-					 id="div_community_read_comment_new" onClick={() => click_reply("")}>
-					<button class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 
-								   group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white focus:ring-4 focus:outline-none focus:ring-blue-300">
-						<span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-opacity-0">
-							댓글 쓰기
-						</span>
-					</button>
-				</div>
+				{
+					check_agree_comment(props.is_secret, props.check_reader)
+					?   <div class="flex flex-row justify-center items-center p-6 text-base bg-gray-100 rounded-xl w-full" id="div_community_read_comment_new">
+							<Div_comment_form title={"댓글 쓰기"} class={"w-full space-y-2"} uuid_comment={null} />
+						</div>
+					:   ""
+				}
 			</div>
 		</section>
 	)
