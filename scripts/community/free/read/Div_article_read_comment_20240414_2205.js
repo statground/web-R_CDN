@@ -16,7 +16,7 @@ function Div_article_read_comment(props) {
 					</div>
 				</div>
 				<div class="text-gray-500" id={"div_comment_" + props.data.uuid}></div>
-				<div class="flex items-center space-x-4">
+				<div class="flex items-center space-x-4" id={"div_comment_footer_" + props.data.uuid}>
 					{
 						props.data.check_comment_reader != "user"
 						?   <button type="button" class="flex justify-center items-center text-sm text-gray-500 hover:underline font-medium"
@@ -61,7 +61,7 @@ function Div_article_read_comment(props) {
 					</div>
 				</div>
 				<div class="text-gray-500" id={"div_comment_" + props.data.uuid}></div>
-				<div class="flex items-center space-x-4">
+				<div class="flex items-center space-x-4" id={"div_comment_footer_" + props.data.uuid}>
 					{
 						check_agree_comment(props.is_secret, props.check_reader)
 						?   <button type="button" class="flex justify-center items-center text-sm text-gray-500 hover:underline font-medium"
@@ -103,7 +103,7 @@ function Div_article_read_comment(props) {
 	}
 
 	const comment_list = Object.keys(props.data).map((btn_data) =>  
-		<Div_comment_depth1 data={props.data[btn_data]} is_secret={props.is_secret} check_comment_reader={props.check_comment_reader} />
+		<Div_comment_depth1 data={props.data[btn_data]} is_secret={props.is_secret} check_reader={props.check_reader} />
 	)
 
 	return (
