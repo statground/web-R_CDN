@@ -1,7 +1,7 @@
 function set_main() {
 	function Div_main() {
 		return (
-			<div class="flex flex-col justify-center items-center w-full space-y-[50px] mt-[50px]">
+			<div class="flex flex-col justify-center items-center w-full space-y-[50px] mt-[50px] px-[100px] py-[20px] md:px-[10px] md:py-[0px]">
 				<div id="div_main_header" class="w-full"></div>
 				<div id="div_main_statistics" class="w-full"></div>
 				<div id="div_main_event" class="w-full"></div>
