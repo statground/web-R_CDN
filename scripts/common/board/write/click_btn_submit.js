@@ -22,13 +22,14 @@ async function click_btn_submit() {
 		// 게시글 등록
 		} else {
 			const request_data = new FormData();
-			request_data.append('url', url);
+			request_data.append('tag', url);
+			request_data.append('tag_sub', sub);
 			request_data.append('txt_title', txt_title);
 			request_data.append('txt_content', txt_content);
 			request_data.append('chk_secret', chk_secret);
 			
 
-			const data = await fetch("/community/ajax_insert_article/", {
+			const data = await fetch("/blank/ajax_board/insert_article/", {
 								method: "post", 
 								headers: { "X-CSRFToken": getCookie("csrftoken"), },
 								body: request_data
@@ -36,8 +37,6 @@ async function click_btn_submit() {
 								.then(res=> { return res.json(); })
 								.then(res=> { return res; });
 
-			let init_url = "/community/"
-			if (url != "free") {init_url += url + "/"}
 			location.href=init_url + "read/" + data.uuid + "/"
 		}
 

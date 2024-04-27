@@ -44,14 +44,7 @@ async function set_main() {
 			});
 
 	} else {
-		let category_url = url
-		if (category_url == "free") {
-			category_url = ""
-		} else {
-			category_url = url + "/"
-		}
-
-		location.href="/community/" + category_url
+		location.href=init_url
 		
 	}
 }
