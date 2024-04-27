@@ -1,7 +1,4 @@
 function Div_button() {
-	let init_url = "/community/"
-	if (url != "free") {init_url += url + "/"}
-	
 	return (
 		<div class="grid grid-cols-2 justify-center items-center gap-2 w-full">
 			<button type="button" onClick={() => click_btn_submit()}
@@ -9,11 +6,11 @@ function Div_button() {
 							hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300">
 				완료
 			</button>
-			<button type="button" onClick={() => location.href=init_url}
-					class="text-gray-900 bg-white border border-gray-700 font-medium rounded-lg text-sm px-5 py-2.5
-						   focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100">
+			<a href={init_url}
+			   class="text-gray-900 text-center bg-white border border-gray-700 font-medium rounded-lg text-sm px-5 py-2.5
+					  focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100">
 				목록으로
-			</button>
+			</a>
 		</div>
 	)
 }
