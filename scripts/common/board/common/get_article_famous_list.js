@@ -18,7 +18,6 @@ async function get_article_famous_list() {
 
 	const request_data = new FormData();
 	request_data.append('tag', url);
-	request_data.append('tag', sub);
 
 	const data = await fetch("/blank/ajax_board/get_article_famous_list/", {
 							method: "post", 
