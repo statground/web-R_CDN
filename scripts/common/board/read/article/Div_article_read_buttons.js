@@ -1,7 +1,4 @@
 function Div_article_read_buttons(props) {
-	let init_url = "/community/"
-	if (url != "free") {init_url += url + "/"}
-
 	return (
 		<div class="flex flex-col justify-center items-center w-full space-y-2">
 			<div class="grid grid-cols-2 justify-center items-center gap-2 w-full">
