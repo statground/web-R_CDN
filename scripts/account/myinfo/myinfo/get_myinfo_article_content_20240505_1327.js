@@ -59,10 +59,6 @@ async function get_myinfo_article_content() {
 	}
 
 	function Col_nothing(props) {
-		const articleList = Object.keys(props.data).map((article) =>
-			<Div_new_article_list data={props.data[article]} />
-		)
-
 		return (
 			<div class="flex flex-col justify-center text-center content-center w-full space-y-2 p-12">
 				<p>작성한 글이 없습니다.</p>
