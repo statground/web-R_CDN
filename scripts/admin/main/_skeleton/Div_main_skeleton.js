@@ -1,4 +1,4 @@
-function Div_main(props) {    
+function Div_main_skeleton(props) {    
 	return (
 		<div class="grid grid-cols-12 md:grid-cols-1 justify-center item-center w-full px-[100px] py-[20px] md:px-[10px] md:grid-cols-1">
 			<Div_operation_menu />
