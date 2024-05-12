@@ -26,7 +26,7 @@ function Div_main(props) {
 			<div class="col-span-10 md:grid-cols-1 justify-center item-center">
 				<div class="w-full bg-white border border-gray-200 rounded-lg shadow">
 					<div class="p-4 bg-white rounded-lg md:p-8 text-center">
-						<Div_sub_title title={"Web-R 접속 횟수"} />
+						<Div_sub_title title={"결제액"} />
 						<dl class="grid grid-cols-4 w-full md:grid-cols-2 gap-8 p-4 mx-auto text-gray-900 md:p-8">
 							<Div_sub_card title={"총 결제액"} value={props.data.count.sum_amount_total['0']} unit={"원"}
 										  subtitle={"총 결제 건 수"} subvalue={props.data.count.cnt_amount_total['0']} subunit={"건"}/>
