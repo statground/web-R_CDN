@@ -81,8 +81,8 @@ function Div_article_read_comment(props) {
 				{
 					check_agree_comment(props.is_secret, props.check_reader)
 					&&   <div class="flex flex-row justify-center items-center p-6 text-base bg-gray-100 rounded-xl w-full" id="div_community_read_comment_new">
-							<Div_comment_form title={"댓글 쓰기"} class={"w-full space-y-2"} uuid_comment={null} />
-						</div>
+								<Div_comment_form title={"댓글 쓰기"} class={"w-full space-y-2"} uuid_comment={null} />
+							</div>
 				}
 			</div>
 		</section>
