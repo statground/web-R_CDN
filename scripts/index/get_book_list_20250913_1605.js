@@ -41,8 +41,8 @@
     navBtnBase:"absolute z-10 top-1/2 -translate-y-1/2 h-9 w-9 grid place-items-center rounded-full bg-black text-white shadow",
     navBtnL:"left-2",
     navBtnR:"right-2",
-    slider:"flex gap-3 overflow-x-auto scroll-smooth pb-2",
-    card:"flex flex-col justify-start w-64 min-w-64 h-64 p-3 rounded-xl shadow bg-white border hover:border-gray-900",
+    slider:"flex gap-3 overflow-x-scroll scroll-smooth pb-2 scrollbar-hide",
+    card:"flex flex-col justify-start w-64 min-w-64 h-48 p-3 rounded-xl shadow bg-white border hover:border-gray-900",
     img:"w-full object-contain rounded-md border bg-white", // 높이는 계산해서 inline style로 설정
     title:"font-semibold leading-snug text-center",
     meta:"text-xs text-gray-500 text-center",
@@ -69,12 +69,12 @@
     }).sort(function(a,b){return (a.randnum||0)-(b.randnum||0);});
   }
 
-  // 카드 (간격 일치 + 이미지 자동 확장)
+  // 카드
   function CardComp(props){
     var b=props.b, idx=props.idx, activeIdx=props.activeIdx, setActiveIdx=props.setActiveIdx;
 
-    var GAP_PX = 8;            // 섹션 간 고정 간격: 표지↔제목, 제목↔메타, 메타↔아이콘
-    var MIN_IMG = 100;         // 표지 최소 높이 하한 (원하면 조절)
+    var GAP_PX = 8;            // 섹션 간 고정 간격
+    var MIN_IMG = 60;          // 표지 최소 높이 하한
 
     var hasVendors = Array.isArray(b.vendors) && b.vendors.length>0;
     var isOpen = activeIdx===idx && hasVendors;
@@ -83,37 +83,39 @@
     var titleRef = React.useRef(null);
     var metaRef  = React.useRef(null);
     var vendorsRef = React.useRef(null);
-    var [imgH,setImgH]=React.useState(224); // 초기값(대략 h-56)
+    var [imgH,setImgH]=React.useState(100); // 기본 이미지 높이
 
-    // 렌더 후 실제 높이 측정 → 이미지 높이를 "남는 공간"으로 맞춤
     function recalc(){
-      if(!cardRef.current) return;
-      var innerH = cardRef.current.clientHeight - 24; // p-3 상/하(12px*2) 제거
-      var titleH = (titleRef.current ? titleRef.current.offsetHeight : 0);
-      var metaH  = (metaRef.current  ? metaRef.current.offsetHeight  : 0);
+        if(!cardRef.current) return;
+        var innerH = cardRef.current.clientHeight - 24; // padding 보정
+        var titleH = (titleRef.current ? titleRef.current.offsetHeight : 0);
+        var metaH  = (metaRef.current  ? metaRef.current.offsetHeight  : 0);
 
-      // 아이콘 영역 높이(열렸을 때만 반영)
-      var vH = 0;
-      if(isOpen && vendorsRef.current){
-        // 잠시 보이게 해서 정확히 측정 (display:none이면 0이라서)
-        var prev = vendorsRef.current.style.display;
-        vendorsRef.current.style.display = "flex";
-        vH = vendorsRef.current.offsetHeight || 0;
-        vendorsRef.current.style.display = prev;
-      }
+        var vH = 0;
+        if(isOpen && vendorsRef.current){
+            var prev = vendorsRef.current.style.display;
+            vendorsRef.current.style.display = "flex";
+            vH = vendorsRef.current.offsetHeight || 0;
+            vendorsRef.current.style.display = prev;
+        }
 
-      // 적용할 GAP 개수: 표지↔제목(1) + 제목↔메타(1) + (아이콘 열림 시) 메타↔아이콘(1)
-      var gaps = 2 + (isOpen ? 1 : 0);
-      var leftover = innerH - (titleH + metaH + vH + gaps*GAP_PX);
-      setImgH(Math.max(MIN_IMG, leftover));
+        var gaps = 2 + (isOpen ? 1 : 0);
+        var leftover = innerH - (titleH + metaH + vH + gaps*GAP_PX);
+
+        // 아이콘 열림 여부에 따라 조정
+        if (isOpen) {
+            // 아이콘이 열리면 이미지가 더 줄어들어 공간 확보
+            setImgH(Math.max(MIN_IMG, leftover - 10));
+        } else {
+            // 닫힌 상태에서는 남는 공간을 다 이미지로 채움 (여백 최소화)
+            setImgH(Math.max(MIN_IMG, leftover));
+        }
     }
 
     React.useLayoutEffect(recalc, [isOpen]);
     React.useEffect(function(){
-      // 폰트 로딩/윈도 리사이즈 등에도 재계산
       function onResize(){ recalc(); }
       window.addEventListener("resize", onResize);
-      // 최초 계산(렌더/이미지 로드 후)
       var t=setTimeout(recalc,0);
       return function(){ window.removeEventListener("resize", onResize); clearTimeout(t); };
     }, []);
@@ -124,28 +126,14 @@
 
     return React.createElement("div",
       { ref:cardRef, className:cls.card, role:"button", tabIndex:0, onClick:onToggle, onKeyDown:onKey },
-
-      // 표지
       React.createElement("img",{ className:cls.img, style:{height:imgH+"px"}, src:b.url_image||ICONS.default_cover, alt:b.title||"book", loading:"lazy" }),
-
-      // 표지↔제목 간격
       React.createElement("div",{ style:{height:GAP_PX+"px"} }),
-
-      // 제목
       React.createElement("div",{ ref:titleRef, className:cls.title }, b.title||""),
-
-      // 제목↔메타 간격
       React.createElement("div",{ style:{height:GAP_PX+"px"} }),
-
-      // 메타
       React.createElement("div",{ ref:metaRef, className:cls.meta },
         (b.publisher? b.publisher : " "), (b.published_at? " · "+b.published_at : "")
       ),
-
-      // 메타↔아이콘 간격 (아이콘 열릴 때만)
       (isOpen ? React.createElement("div",{ style:{height:GAP_PX+"px"} }) : null),
-
-      // 아이콘 행
       React.createElement("div",{
           ref:vendorsRef,
           className:"purchase-buttons "+cls.vendors,
@@ -198,7 +186,6 @@
     );
   }
 
-  // 전역 API
   window.get_book_list = function(){
     var mount=document.getElementById(MOUNT_ID);
     if(!mount) return;
