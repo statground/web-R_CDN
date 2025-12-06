@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="120" height="120" viewBox="0 0 120 120">
+
+  <!-- 배경 카드 -->
+  <defs>
+    <linearGradient id="nbBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF8E1"/>
+      <stop offset="100%" stop-color="#FFE082"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="6" y="6" width="108" height="108" rx="20" fill="url(#nbBg)" />
+
+  <!-- 노트북 본문 -->
+  <rect x="22" y="20" width="76" height="80" rx="12" fill="#FFFFFF" />
+
+  <!-- 바인딩 바 -->
+  <rect x="26" y="24" width="8" height="72" rx="4" fill="#FFB300" />
+
+  <!-- 줄노트 라인 -->
+  <line x1="40" y1="36" x2="88" y2="36" stroke="#E0E0E0" stroke-width="2"/>
+  <line x1="40" y1="48" x2="88" y2="48" stroke="#E0E0E0" stroke-width="2"/>
+  <line x1="40" y1="60" x2="88" y2="60" stroke="#E0E0E0" stroke-width="2"/>
+  <line x1="40" y1="72" x2="88" y2="72" stroke="#E0E0E0" stroke-width="2"/>
+  <line x1="40" y1="84" x2="78" y2="84" stroke="#BDBDBD" stroke-width="2.2"/>
+
+  <!-- ========================== -->
+  <!--   정사각형 R 아이콘 (24x24) -->
+  <!-- ========================== -->
+  <!-- 오른쪽 아래에 24x24 정사각형 블럭 하나 두고 그 안에 R 로고 느낌만 축소해서 그림 -->
+  <g transform="translate(78,78)">
+    <!-- 정사각형 배경 -->
+    <rect x="0" y="0" width="24" height="24" rx="6" fill="#ECEFF1" />
+
+    <!-- 회색 타원 (R 외곽 링) -->
+    <ellipse cx="12" cy="12" rx="9" ry="6" fill="#B0BEC5"/>
+
+    <!-- 파란 타원 (안쪽) -->
+    <ellipse cx="11" cy="12" rx="6" ry="4" fill="#90CAF9"/>
+
+    <!-- R 글자 -->
+    <text x="12" y="15"
+          text-anchor="middle"
+          font-family="Arial, Helvetica, sans-serif"
+          font-size="10"
+          font-weight="bold"
+          fill="#0D47A1">
+      R
+    </text>
+  </g>
+
+</svg>
