@@ -59,12 +59,263 @@ function Notebook() {
   }
 
   useEffect(() => {
-    const nbid = notebookIdFromUrlRef.current;
-    if (!nbid) return;
-    // ✅ /webr/notebook/run/<UUID>/ 진입 시 DB에서 불러오기
-    loadNotebookFromDB(nbid, { setStatusText: true });
+    refreshAuth();
+    function onFocus() {
+      refreshAuth();
+    }
+    window.addEventListener("focus", onFocus);
+    const t = setInterval(refreshAuth, 60 * 1000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(t);
+    };
   }, []);
-// =========================
+
+  // =========================
+  // Overlay
+  // =========================
+  const [showOverlay, setShowOverlay] = useState(true);
+  const [overlayText, setOverlayText] = useState("Booting WebR...");
+
+  // =========================
+  // 셀 상태 (초기값은 constants.js 상수 활용)
+  // =========================
+  const [cells, setCells] = useState([
+    {
+      id: 1,
+      mode: "markdown",
+      source: INITIAL_LATEX_LINES.join("\n"),
+      output: {
+        type: "markdown",
+        html: renderMarkdown(INITIAL_LATEX_LINES.join("\n")),
+      },
+      mdPreview: true,
+      showCode: true,
+      showOutput: true,
+    },
+    {
+      id: 2,
+      mode: "r",
+      source: INITIAL_R_LINES.join("\n"),
+      output: null,
+      mdPreview: false,
+      showCode: true,
+      showOutput: true,
+    },
+  ]);
+  const [activeCellId, setActiveCellId] = useState(2);
+
+  // =========================
+  // Dark Mode 처리 (Tailwind + CodeMirror)
+  // =========================
+  useEffect(() => {
+    try {
+      document.documentElement.classList.toggle("dark", !!darkMode);
+    } catch (e) {}
+
+    // material-darker 테마 CSS 한 번만 로드
+    try {
+      const id = "cm-theme-material-darker";
+      if (!document.getElementById(id)) {
+        const link = document.createElement("link");
+        link.id = id;
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/codemirror@5/theme/material-darker.css";
+        document.head.appendChild(link);
+      }
+    } catch (e) {}
+
+    setTimeout(() => {
+      try {
+        document.querySelectorAll(".CodeMirror").forEach((el) => {
+          const cm = el && el.CodeMirror;
+          if (!cm) return;
+          try {
+            cm.setOption("theme", darkMode ? "material-darker" : "default");
+          } catch (e) {}
+          try {
+            cm.refresh();
+          } catch (e) {}
+        });
+      } catch (e) {}
+    }, 50);
+  }, [darkMode]);
+
+  // 셀 변경 시 CodeMirror refresh 보정
+  useEffect(() => {
+    setTimeout(() => {
+      try {
+        document.querySelectorAll(".CodeMirror").forEach((el) => {
+          const cm = el && el.CodeMirror;
+          if (!cm) return;
+          try {
+            cm.setOption("theme", darkMode ? "material-darker" : "default");
+          } catch (e) {}
+          try {
+            cm.refresh();
+          } catch (e) {}
+        });
+      } catch (e) {}
+    }, 30);
+  }, [cells, activeCellId, darkMode]);
+
+  // =========================
+  // WebR 초기화
+  // =========================
+  useEffect(() => {
+    let cancelled = false;
+    async function initWebR() {
+      try {
+        setShowOverlay(true);
+        setOverlayText("Downloading WebR runtime...");
+
+        const WebRClass = await waitForWebR();
+        if (cancelled) return;
+
+        const webr = new WebRClass({
+          defaultPackages: ["base", "graphics", "grDevices", "stats"],
+          RArgs: ["--quiet"],
+        });
+
+        setStatus("Starting WebR...");
+        await webr.init();
+        if (cancelled) return;
+
+        await webr.evalRVoid('options(repos = c(CRAN = "https://repo.r-wasm.org"))');
+        await webr.evalRVoid("options(device = webr::canvas)");
+
+        await webr.evalRVoid(`
+          options(
+            help_type = "text",
+            pager = function(files, header, title, delete.file) {
+              if (length(files) == 0L) return(invisible())
+              out <- character()
+              for (f in files) {
+                if (file.exists(f)) {
+                  txt <- tryCatch({
+                      raw_txt <- readLines(f, warn = FALSE, encoding = "UTF-8")
+                      iconv(raw_txt, from = "UTF-8", to = "UTF-8", sub = "byte")
+                    }, error = function(e) character())
+                  out <- c(out, txt, "")
+                }
+              }
+              if (length(out)) { cat(paste(out, collapse = "\n"), sep = "\n") }
+              invisible()
+            }
+          )
+        `);
+
+        setWebrInstance(webr);
+        setStatus("Ready");
+        setReady(true);
+        setOverlayText("WebR is ready.");
+        setTimeout(() => setShowOverlay(false), 300);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) {
+          setStatus("Failed to start WebR");
+          setOverlayText("Initialization failed:\n" + (e.message || String(e)));
+        }
+      }
+    }
+    initWebR();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // =========================
+  // DB Load: 페이지 진입 시 notebook data 로드
+  // =========================
+  useEffect(() => {
+    (async () => {
+      const nbid = notebookIdFromUrlRef.current;
+      if (!nbid) return;
+
+      try {
+        setStatus("Loading notebook...");
+        const res = await apiLoadNotebook(nbid);
+
+        if (!res || res.ok !== true || !res.item) {
+          setStatus("Failed to load");
+          return;
+        }
+
+        if (res.item.title) setNotebookTitle(res.item.title);
+
+        // data는 JSON 컬럼 (객체/문자열 모두 처리)
+        if (res.item.data) {
+          const parsed = typeof res.item.data === "string" ? JSON.parse(res.item.data) : res.item.data;
+
+          if (parsed && Array.isArray(parsed.cells)) {
+            const loadedCells = parsed.cells.map((cell) => {
+              let restoredOutput = null;
+
+              if (cell.mode === "markdown") {
+                restoredOutput = { type: "markdown", html: renderMarkdown(cell.source || "") };
+                return {
+                  id: cell.id,
+                  mode: "markdown",
+                  source: cell.source || "",
+                  output: restoredOutput,
+                  mdPreview: true,
+                  showCode: cell.showCode !== false,
+                  showOutput: cell.showOutput !== false,
+                };
+              }
+
+              if (cell.output) {
+                if (cell.output.type === "text") restoredOutput = { type: "text", text: cell.output.text };
+                if (cell.output.type === "image") {
+                  restoredOutput = {
+                    type: "image",
+                    src: cell.output.src,
+                    inlineSize: cell.output.inlineSize || "small",
+                    toggleSize: () => {},
+                  };
+                }
+              }
+
+              return {
+                id: cell.id,
+                mode: "r",
+                source: cell.source || "",
+                output: restoredOutput,
+                mdPreview: false,
+                showCode: cell.showCode !== false,
+                showOutput: cell.showOutput !== false,
+              };
+            });
+
+            const finalCells = loadedCells.map((c) => {
+              if (c.output && c.output.type === "image") {
+                c.output.toggleSize = () => {
+                  setCells((prev) =>
+                    prev.map((p) => {
+                      if (p.id !== c.id) return p;
+                      const sz = p.output.inlineSize === "large" ? "small" : "large";
+                      return { ...p, output: { ...p.output, inlineSize: sz } };
+                    })
+                  );
+                };
+              }
+              return c;
+            });
+
+            setCells(finalCells);
+            if (finalCells.length > 0) setActiveCellId(finalCells[0].id);
+          }
+        }
+
+        setStatus("Loaded");
+      } catch (e) {
+        console.error(e);
+        setStatus("Load error");
+      }
+    })();
+  }, []);
+
+  // =========================
   // Cell operations
   // =========================
   function addCellBelow(targetId) {
@@ -334,7 +585,6 @@ function Notebook() {
     const nbid = notebookIdFromUrlRef.current;
     if (!nbid) return;
 
-    // ✅ 불러오기(리로드) 전 확인
     if (!window.confirm("DB에 저장된 노트북 내용을 다시 불러올까요? (현재 화면의 변경사항은 사라질 수 있어요)")) return;
 
     await loadNotebookFromDB(nbid, { setStatusText: true });
@@ -396,7 +646,7 @@ function Notebook() {
           if (finalCells.length > 0) setActiveCellId(finalCells[0].id);
         }
       }
-      setStatus("Reloaded");
+      setStatus("Loaded");
     } catch (e) {
       console.error(e);
       setStatus("Reload error");
@@ -675,8 +925,7 @@ function Notebook() {
 
 
   /**
-   * DB에서 노트북 데이터를 불러와 상태에 반영
-   * - initial load (/run/<uuid>/ 진입)과 Reload 버튼에서 공통으로 사용
+   * DB에서 노트북 데이터를 불러와 상태에 반영 (split columns)
    */
   async function loadNotebookFromDB(nbid, { setStatusText = true } = {}) {
     if (!nbid) return false;
@@ -693,22 +942,16 @@ function Notebook() {
 
       const restored = restoreNotebookFromDbItem(res.item);
 
-      // title
       if (restored.title) setNotebookTitle(restored.title);
 
-      // cells
       if (restored.cells && restored.cells.length) {
         setCells(restored.cells);
         setActiveCellId(restored.activeCellId);
       }
 
-      // theme
       if (restored.darkMode !== null) setDarkMode(restored.darkMode);
-
-      // data manager
       if (restored.dataFiles) setDataFiles(restored.dataFiles);
 
-      // package manager
       if (restored.installedPackages) {
         const merged = Array.from(new Set([...CORE_PACKAGES, ...restored.installedPackages])).sort();
         setInstalledPackages(merged);
@@ -716,7 +959,6 @@ function Notebook() {
 
       if (setStatusText) setStatus("Loaded");
       return true;
-
     } catch (e) {
       console.error(e);
       if (setStatusText) setStatus("Load error");
@@ -725,6 +967,14 @@ function Notebook() {
       setBusy(false);
     }
   }
+
+  // ✅ /webr/notebook/run/<UUID>/ 진입 시 DB에서 불러오기 (split columns)
+  useEffect(() => {
+    const nbid = notebookIdFromUrlRef.current;
+    if (!nbid) return;
+    loadNotebookFromDB(nbid, { setStatusText: true });
+  }, []);
+
   // =========================
   // UI 렌더링
   // =========================
