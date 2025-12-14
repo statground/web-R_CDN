@@ -2,7 +2,7 @@
  * Notebook 컴포넌트 (메인)
  */
 function Notebook() {
-  const { useState, useEffect, useRef } = React;
+  const { useState, useEffect, useLayoutEffect, useRef } = React;
 
   // =========================
   // URL에서 notebookID 추출
@@ -457,6 +457,12 @@ function showToast(message, kind = "ok") {
       if (cell.mode === "r") await runRCell(cell.id, false);
       if (cell.mode === "markdown") runMarkdownCell(cell.id);
     }
+  }
+
+  // Run All 버튼 핸들러 (JSX에서 참조되는 이름 유지)
+  // - 일부 패치에서 onClick={handleRunAll}로 쓰고 있어, runAllCells를 래핑해줍니다.
+  function handleRunAll() {
+    runAllCells();
   }
 
   // =========================
@@ -1160,7 +1166,7 @@ const payload = {
       <header ref={headerRef} className={headerClass}>
         <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           {/* ===== Row 1 (mobile): Logo + Ready + Auth buttons ===== */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-start">
             <div className="flex min-w-0 items-center gap-3">
               {/* 로고/타이틀 클릭 시 /webr/notebook/ 이동 */}
               <a
@@ -1259,7 +1265,7 @@ const payload = {
           </div>
 
           {/* ===== Row 2 (mobile): Other buttons (wrap if needed) ===== */}
-          <div className="flex flex-wrap items-center gap-2 text-[12px]">
+          <div className="flex w-full flex-wrap items-center gap-2 text-[12px] lg:w-auto lg:justify-end">
             {/* Dark mode */}
             <button
               type="button"
@@ -1654,8 +1660,6 @@ const payload = {
   )}
 
   {/* Package Manager */}
-  <section className="mb-4">
-
           <section className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[12px] font-semibold text-slate-600 dark:text-slate-200">PACKAGE MANAGER</h2>
