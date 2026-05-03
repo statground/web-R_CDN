@@ -213,7 +213,7 @@ function Div_menu() {
           href={props.url}
           class="flex flex-col justify-center items-center px-4 py-2 w-full hover:border hover:border-blue-300 hover:bg-blue-100"
         >
-          <img src={props.img_url} class={"object-scale-down h-[80px] mb-2"} />
+          <img src={props.img_url} class={"object-scale-down h-[80px] w-[120px] max-w-full mb-2"} />
           {props.title}
         </a>
       </li>
@@ -279,7 +279,7 @@ function Div_menu() {
 
 		{/* PC megamenu: Web-R */}
 		<div id="div_megamenu_webr" class="hidden">
-		  <div class="flex justify-center max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600 space-x-12">
+		  <div class="grid grid-cols-3 max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600">
 			<ul class="my-4 space-y-4">
 			  <Div_sub_menu_pc_li_img
 				url={"/webr/"}
