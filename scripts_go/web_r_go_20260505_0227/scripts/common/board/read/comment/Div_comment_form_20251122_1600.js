@@ -33,7 +33,7 @@ function Div_comment_form(props) {
       /* @__PURE__ */ React.createElement(
         "img",
         {
-          src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg",
+          src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/file_upload.svg",
           class: "w-4 h-4 mr-2 md:mr-0"
         }
       ),
@@ -48,7 +48,7 @@ function Div_comment_form(props) {
       /* @__PURE__ */ React.createElement(
         "img",
         {
-          src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg",
+          src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/trash.svg",
           class: "w-4 h-4"
         }
       )

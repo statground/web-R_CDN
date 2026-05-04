@@ -22,7 +22,7 @@ function Div_main(props) {
       class: "flex flex-row justify-center items-center py-1.5 px-5 text-white \n							bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto\n							hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300",
       onClick: () => document.getElementById("id_file_upload").click()
     },
-    /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg", class: "w-4 h-4 mr-2" }),
+    /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/file_upload.svg", class: "w-4 h-4 mr-2" }),
     "\uD30C\uC77C \uCCA8\uBD80\uD558\uAE30"
-  ), /* @__PURE__ */ React.createElement("p", { id: "txt_filename" }), /* @__PURE__ */ React.createElement("p", { id: "txt_file_delete", class: "hidden", onClick: () => click_delete_file() }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg", class: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_button_list" }, /* @__PURE__ */ React.createElement(Div_button, null)));
+  ), /* @__PURE__ */ React.createElement("p", { id: "txt_filename" }), /* @__PURE__ */ React.createElement("p", { id: "txt_file_delete", class: "hidden", onClick: () => click_delete_file() }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/trash.svg", class: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_button_list" }, /* @__PURE__ */ React.createElement(Div_button, null)));
 }

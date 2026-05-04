@@ -1,12 +1,12 @@
 (function() {
   const serviceURL = "/webr/2.0/";
   const serviceTitle = "Web-R 2.0";
-  const serviceImage = "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/advanced_webR.png";
+  const serviceImage = "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/advanced_webR.png";
   const oldPubMedTitle = "PubMed wordcloud";
   const oldPubMedURL = "/webr/pubmed-wordcloud/";
   const workshopURL = "/workshop/";
   const workshopTitle = "\uC6CC\uD06C\uC0F5";
-  const workshopImage = "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_workshop.svg";
+  const workshopImage = "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/menu_workshop.svg";
   function textOf(node) {
     return (node && node.textContent ? node.textContent : "").replace(/\s+/g, " ").trim();
   }

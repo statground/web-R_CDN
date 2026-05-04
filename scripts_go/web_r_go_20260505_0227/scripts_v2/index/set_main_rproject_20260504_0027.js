@@ -39,7 +39,7 @@ function Span_btn_user(props) {
   return /* @__PURE__ */ React.createElement("span", { class: `${class_span_btn_default} text-xs bg-${role}-100 text-${role}-800` }, /* @__PURE__ */ React.createElement(
     "img",
     {
-      src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/board_user.svg",
+      src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/board_user.svg",
       class: "w-3 h-3 mr-1"
     }
   ), props.user_nickname);
@@ -48,7 +48,7 @@ function Span_btn_date(props) {
   return /* @__PURE__ */ React.createElement("span", { class: `${class_span_btn_default} text-xs bg-blue-100 text-blue-800` }, /* @__PURE__ */ React.createElement(
     "img",
     {
-      src: `https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/calendar_${Number(
+      src: `https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/calendar_${Number(
         props.date.split("-")[2].substr(0, 2)
       )}.svg`,
       class: "w-3 h-3 mr-1"
@@ -59,7 +59,7 @@ function Span_btn_article_read(props) {
   return props.cnt_read > 0 && /* @__PURE__ */ React.createElement("span", { class: `${class_span_btn_default} text-xs bg-gray-100 text-blue-800` }, /* @__PURE__ */ React.createElement(
     "img",
     {
-      src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/eye.svg",
+      src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/eye.svg",
       class: "w-3 h-3 mr-1"
     }
   ), props.cnt_read.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ","));
@@ -68,7 +68,7 @@ function Span_btn_article_comment(props) {
   return props.cnt_comment > 0 && /* @__PURE__ */ React.createElement("span", { class: `${class_span_btn_default} text-xs bg-purple-100 text-blue-800` }, /* @__PURE__ */ React.createElement(
     "img",
     {
-      src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/comment.svg",
+      src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/comment.svg",
       class: "w-3 h-3 mr-1"
     }
   ), props.cnt_comment.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ","));
@@ -157,15 +157,15 @@ function get_book_list() {
   var API_URL = "/book/ajax_get_book_list/";
   var MOUNT_ID = "div_book_list";
   var ICONS = {
-    kyobo: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/kyobobook2.png",
-    yes24: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/yes24.png",
-    ypbooks: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/ypbooks.png",
-    coupang: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/coupang.png",
-    leanpub: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/LeanPub.png",
-    bookdown: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/bookdown.png",
-    board: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_free.svg",
-    default_vendor: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/icon_default.png",
-    default_cover: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/default_book.png"
+    kyobo: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/kyobobook2.png",
+    yes24: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/yes24.png",
+    ypbooks: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/ypbooks.png",
+    coupang: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/coupang.png",
+    leanpub: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/LeanPub.png",
+    bookdown: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/bookdown.png",
+    board: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/menu_free.svg",
+    default_vendor: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/icon_default.png",
+    default_cover: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/default_book.png"
   };
   function iconForSource(source) {
     var s = (source || "").toLowerCase();

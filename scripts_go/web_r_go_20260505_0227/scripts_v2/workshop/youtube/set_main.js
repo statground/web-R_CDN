@@ -168,22 +168,22 @@ function Span_btn_user(props) {
     "\uC900\uD68C\uC6D0": "gray"
   };
   const role = roles[props.role] || "gray";
-  return /* @__PURE__ */ React.createElement("span", { class: "flex flex-row justify-center items-center w-fit h-[20px] px-1.5 rounded-xl text-xs bg-" + role + "-100 text-" + role + "-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/board_user.svg", class: "w-3 h-3 mr-1" }), props.user_nickname);
+  return /* @__PURE__ */ React.createElement("span", { class: "flex flex-row justify-center items-center w-fit h-[20px] px-1.5 rounded-xl text-xs bg-" + role + "-100 text-" + role + "-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/board_user.svg", class: "w-3 h-3 mr-1" }), props.user_nickname);
 }
 function Span_btn_date(props) {
   const rawDate = safeDateText(props.date);
   const dateKey = rawDate && rawDate.split("-")[2] ? Number(rawDate.split("-")[2].substr(0, 2)) : 1;
-  return /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-xs bg-blue-100 text-blue-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/calendar_" + dateKey + ".svg", class: "w-3 h-3 mr-1" }), rawDate);
+  return /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-xs bg-blue-100 text-blue-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/calendar_" + dateKey + ".svg", class: "w-3 h-3 mr-1" }), rawDate);
 }
 function Span_btn_article_read(props) {
   if (!(Number(props.cnt_read || 0) > 0))
     return null;
-  return /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-xs bg-gray-100 text-blue-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/eye.svg", class: "w-3 h-3 mr-1" }), numberWithCommas(props.cnt_read));
+  return /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-xs bg-gray-100 text-blue-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/eye.svg", class: "w-3 h-3 mr-1" }), numberWithCommas(props.cnt_read));
 }
 function Span_btn_article_comment(props) {
   if (!(Number(props.cnt_comment || 0) > 0))
     return null;
-  return /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-xs bg-purple-100 text-blue-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/comment.svg", class: "w-3 h-3 mr-1" }), numberWithCommas(props.cnt_comment));
+  return /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-xs bg-purple-100 text-blue-800" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/comment.svg", class: "w-3 h-3 mr-1" }), numberWithCommas(props.cnt_comment));
 }
 function Span_btn_article_new(props) {
   return normalizeBool(props.toggle) ? /* @__PURE__ */ React.createElement("span", { class: class_span_btn_default + " text-[10px] bg-red-500 text-white animate-pulse" }, "NEW") : null;
@@ -298,21 +298,21 @@ function Div_comment_button_list(props) {
     {
       text: "\uB300\uB313\uAE00",
       function: () => click_btn_reply_comment(data.uuid),
-      url_image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/comment_re_reply.svg"
+      url_image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/comment_re_reply.svg"
     }
   ), data && data.check_comment_reader !== "user" && data.active === 1 && /* @__PURE__ */ React.createElement(
     ButtonComp,
     {
       text: "\uC218\uC815",
       function: !loading ? () => click_btn_edit_comment(data.uuid) : void 0,
-      url_image: !loading ? "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/comment_modify.svg" : null
+      url_image: !loading ? "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/comment_modify.svg" : null
     }
   ), data && data.check_comment_reader !== "user" && data.active === 1 && /* @__PURE__ */ React.createElement(
     ButtonComp,
     {
       text: "\uC0AD\uC81C",
       function: !loading ? () => comment_action("delete", data.uuid) : void 0,
-      url_image: !loading ? "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/comment_delete.svg" : null
+      url_image: !loading ? "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/comment_delete.svg" : null
     }
   ));
 }
@@ -336,9 +336,9 @@ function Div_comment_form(props) {
       class: "flex flex-row justify-center items-center py-1.5 px-5 text-white bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300",
       onClick: () => document.getElementById("id_file_upload_" + commentId).click()
     },
-    /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg", class: "w-4 h-4 mr-2 md:mr-0" }),
+    /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/file_upload.svg", class: "w-4 h-4 mr-2 md:mr-0" }),
     /* @__PURE__ */ React.createElement("p", { class: "block md:hidden" }, "\uD30C\uC77C \uCCA8\uBD80\uD558\uAE30")
-  ), /* @__PURE__ */ React.createElement("p", { id: "txt_filename_" + commentId }), /* @__PURE__ */ React.createElement("p", { id: "txt_file_delete_" + commentId, class: "hidden", onClick: () => comment_file_action("delete", commentId) }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg", class: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-end items-center w-full space-x-2" }, /* @__PURE__ */ React.createElement("input", { id: "chk_secret_" + commentId, type: "checkbox", value: "", class: "w-4 h-4 text-blue-600 bg-gray-100 border-gray-500 rounded focus:ring-blue-500 focus:ring-2" }), /* @__PURE__ */ React.createElement("label", { for: "chk_secret_" + commentId, class: "ms-2 text-sm font-medium text-gray-900" }, /* @__PURE__ */ React.createElement("p", null, "\uBE44\uBC00 \uB313\uAE00", /* @__PURE__ */ React.createElement("span", null, "\uB85C \uC791\uC131\uD558\uAE30 (\uBCF8\uC778\uACFC \uAE00 \uC791\uC131\uC790, \uAD00\uB9AC\uC790\uB9CC \uC77D\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.)"))), /* @__PURE__ */ React.createElement("div", { class: "w-fit", id: "btn_comment_editor_footer_button" + (isNewComment ? "" : "_" + commentId) }, /* @__PURE__ */ React.createElement(Div_btn_comment_editor_footer_button, { uuid_comment: commentId, function: () => comment_action("submit", commentId) }))))));
+  ), /* @__PURE__ */ React.createElement("p", { id: "txt_filename_" + commentId }), /* @__PURE__ */ React.createElement("p", { id: "txt_file_delete_" + commentId, class: "hidden", onClick: () => comment_file_action("delete", commentId) }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/trash.svg", class: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-end items-center w-full space-x-2" }, /* @__PURE__ */ React.createElement("input", { id: "chk_secret_" + commentId, type: "checkbox", value: "", class: "w-4 h-4 text-blue-600 bg-gray-100 border-gray-500 rounded focus:ring-blue-500 focus:ring-2" }), /* @__PURE__ */ React.createElement("label", { for: "chk_secret_" + commentId, class: "ms-2 text-sm font-medium text-gray-900" }, /* @__PURE__ */ React.createElement("p", null, "\uBE44\uBC00 \uB313\uAE00", /* @__PURE__ */ React.createElement("span", null, "\uB85C \uC791\uC131\uD558\uAE30 (\uBCF8\uC778\uACFC \uAE00 \uC791\uC131\uC790, \uAD00\uB9AC\uC790\uB9CC \uC77D\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.)"))), /* @__PURE__ */ React.createElement("div", { class: "w-fit", id: "btn_comment_editor_footer_button" + (isNewComment ? "" : "_" + commentId) }, /* @__PURE__ */ React.createElement(Div_btn_comment_editor_footer_button, { uuid_comment: commentId, function: () => comment_action("submit", commentId) }))))));
 }
 function Div_article_read_comment(props) {
   function Div_comment_header(propsHeader) {
@@ -387,15 +387,15 @@ function Div_article_editor_main() {
       class: "flex flex-row justify-center items-center py-1.5 px-5 text-white bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300",
       onClick: () => document.getElementById("id_file_upload").click()
     },
-    /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg", class: "w-4 h-4 mr-2" }),
+    /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/file_upload.svg", class: "w-4 h-4 mr-2" }),
     "\uD30C\uC77C \uCCA8\uBD80\uD558\uAE30"
-  ), /* @__PURE__ */ React.createElement("p", { id: "txt_filename" }), /* @__PURE__ */ React.createElement("p", { id: "txt_file_delete", class: "hidden", onClick: () => click_delete_file() }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg", class: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_button_list" }, /* @__PURE__ */ React.createElement(Div_article_submit_buttons, { loading: false })));
+  ), /* @__PURE__ */ React.createElement("p", { id: "txt_filename" }), /* @__PURE__ */ React.createElement("p", { id: "txt_file_delete", class: "hidden", onClick: () => click_delete_file() }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/trash.svg", class: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_button_list" }, /* @__PURE__ */ React.createElement(Div_article_submit_buttons, { loading: false })));
 }
 function Div_status_loading(props) {
   return /* @__PURE__ */ React.createElement("div", { class: "max-w-screen-xl px-6 py-8 mx-auto space-y-4 md" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-4" }, /* @__PURE__ */ React.createElement("svg", { "aria-hidden": "true", class: "w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600", viewBox: "0 0 100 101", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement("path", { d: "M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z", fill: "currentColor" }), /* @__PURE__ */ React.createElement("path", { d: "M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z", fill: "currentFill" })), /* @__PURE__ */ React.createElement("p", null, props.text)));
 }
 function Div_status_stop(props) {
-  return /* @__PURE__ */ React.createElement("div", { class: "max-w-screen-xl px-6 py-8 mx-auto space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-4" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/stop.svg", class: "size-16" }), /* @__PURE__ */ React.createElement("p", null, props.text), /* @__PURE__ */ React.createElement("a", { href: init_url, class: "text-gray-900 text-center bg-white border border-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 w-[150px] focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100" }, "\uBAA9\uB85D\uC73C\uB85C")));
+  return /* @__PURE__ */ React.createElement("div", { class: "max-w-screen-xl px-6 py-8 mx-auto space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-4" }, /* @__PURE__ */ React.createElement("img", { src: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/stop.svg", class: "size-16" }), /* @__PURE__ */ React.createElement("p", null, props.text), /* @__PURE__ */ React.createElement("a", { href: init_url, class: "text-gray-900 text-center bg-white border border-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 w-[150px] focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100" }, "\uBAA9\uB85D\uC73C\uB85C")));
 }
 function YouTubeListPage(props) {
   return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto md:px-8" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: header_title, subtitle: header_subtitle }), /* @__PURE__ */ React.createElement("div", { id: "div_community_list", class: "flex flex-col justify-center items-center w-full space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-start w-full gap-4 md:grid-cols-1" }, /* @__PURE__ */ React.createElement("div", { id: "div_article_list", class: "w-full" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center border border-gray-300 rounded-xl space-y-4 w-full p-8" }, /* @__PURE__ */ React.createElement(Div_box_header, { title: "\uCD5C\uC2E0 \uAE00" }))), props.showWriteButton && /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-start w-full space-y-4" }, /* @__PURE__ */ React.createElement(

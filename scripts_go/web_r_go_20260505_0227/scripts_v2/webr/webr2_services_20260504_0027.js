@@ -5,7 +5,7 @@ function set_main() {
       title: "PubMed wordcloud",
       description: "PubMed \uCD08\uB85D\uC744 \uAC00\uC838\uC640 WebAssembly R\uC5D0\uC11C \uB2E8\uC5B4 \uBE48\uB3C4\uB97C \uACC4\uC0B0\uD558\uACE0 wordcloud\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4.",
       href: "/webr/pubmed-wordcloud/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/advanced_pubmed.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/advanced_pubmed.png",
       tags: ["PubMed", "wordcloud", "WebAssembly"]
     },
     {
@@ -13,7 +13,7 @@ function set_main() {
       title: "\uBA54\uD0C0\uBD84\uC11D",
       description: "\uC5F0\uC18D\uD615, \uC774\uBD84\uD615, \uD6A8\uACFC\uD06C\uAE30 \uB370\uC774\uD130\uB97C WebAssembly R\uC5D0\uC11C \uACE0\uC815\uD6A8\uACFC\uC640 \uB79C\uB364\uD6A8\uACFC \uBAA8\uB378\uB85C \uBD84\uC11D\uD569\uB2C8\uB2E4.",
       href: "/webr/meta-analysis/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/advanced_meta.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/advanced_meta.png",
       tags: ["Meta-analysis", "forest plot", "WebAssembly"]
     },
     {
@@ -21,7 +21,7 @@ function set_main() {
       title: "ROC \uBD84\uC11D",
       description: "\uC774\uBD84\uD615 \uACB0\uACFC\uC640 \uC608\uCE21 \uC810\uC218\uB97C \uC774\uC6A9\uD574 AUC, \uCD5C\uC801 \uC808\uB2E8\uAC12, \uBBFC\uAC10\uB3C4\uC640 \uD2B9\uC774\uB3C4\uB97C \uACC4\uC0B0\uD569\uB2C8\uB2E4.",
       href: "/webr/roc-analysis/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/book/book_006.jpg",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/book/book_006.jpg",
       tags: ["ROC", "AUC", "cutoff"]
     },
     {
@@ -29,7 +29,7 @@ function set_main() {
       title: "\uC0DD\uC874\uBD84\uC11D\uACFC PSM",
       description: "Kaplan-Meier \uC0DD\uC874\uACE1\uC120, log-rank \uAC80\uC815, propensity score matching \uADE0\uD615\uD45C\uB97C \uB9CC\uB4ED\uB2C8\uB2E4.",
       href: "/webr/survival-psm/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/advanced_survival.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/advanced_survival.png",
       tags: ["Survival", "PSM", "WebAssembly"]
     },
     {
@@ -37,7 +37,7 @@ function set_main() {
       title: "\uC870\uAC74\uBD80 \uACFC\uC815 \uBD84\uC11D",
       description: "\uB9E4\uAC1C, \uC870\uC808, \uC870\uC808\uB41C \uB9E4\uAC1C \uBAA8\uD615\uC758 \uD68C\uADC0\uACC4\uC218\uC640 \uBD80\uD2B8\uC2A4\uD2B8\uB7A9 \uAC04\uC811\uD6A8\uACFC\uB97C \uACC4\uC0B0\uD569\uB2C8\uB2E4.",
       href: "/webr/conditional-process/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/advanced_processR.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/advanced_processR.png",
       tags: ["Mediation", "Moderation", "processR"]
     },
     {
@@ -45,7 +45,7 @@ function set_main() {
       title: "Propensity Score Matching",
       description: "\uC131\uD5A5\uC810\uC218\uB97C \uCD94\uC815\uD558\uACE0 \uCD5C\uADFC\uC811 \uB9E4\uCE6D \uC804\uD6C4 \uACF5\uBCC0\uB7C9 \uADE0\uD615\uACFC \uACB0\uACFC \uCC28\uC774\uB97C \uD655\uC778\uD569\uB2C8\uB2E4.",
       href: "/webr/propensity-score-matching/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/propensity_score_matching.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/propensity_score_matching.png",
       tags: ["PSM", "balance", "matching"]
     },
     {
@@ -53,7 +53,7 @@ function set_main() {
       title: "\uC6F9\uC5D0\uC11C \uD558\uB294 ggplot2",
       description: "CSV \uB370\uC774\uD130\uB97C WebR\uC5D0\uC11C \uC694\uC57D\uD558\uACE0 \uC0B0\uC810\uB3C4, \uB9C9\uB300\uADF8\uB798\uD504, \uC0C1\uC790\uADF8\uB9BC\uC744 \uBE0C\uB77C\uC6B0\uC800\uC5D0\uC11C \uADF8\uB9BD\uB2C8\uB2E4.",
       href: "/webr/ggplot2/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/ggplot2new.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/ggplot2new.png",
       tags: ["ggplot2", "plot", "WebAssembly"]
     },
     {
@@ -61,7 +61,7 @@ function set_main() {
       title: "\uC0D8\uD50C \uC218\uC758 \uACC4\uC0B0",
       description: "\uD3C9\uADE0, \uBE44\uC728, \uB450 \uAD70 \uBE44\uAD50\uC758 \uD45C\uBCF8 \uC218\uC640 \uAC80\uC815\uB825\uC744 WebR\uB85C \uACC4\uC0B0\uD569\uB2C8\uB2E4.",
       href: "/webr/sample-size/",
-      image: "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/sampleSize.png",
+      image: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/webr/sampleSize.png",
       tags: ["sample size", "power", "clinical trial"]
     }
   ];

@@ -2,7 +2,7 @@ function ggWaitForWebR(timeoutMs = 6e4) {
   if (window.WebR)
     return Promise.resolve(window.WebR);
   if (!window.__webrImportPromise)
-    window.__webrImportPromise = (window.__webrDynamicImport || (window.__webrDynamicImport = Function("specifier", "return import(specifier)")))("https://webr.r-wasm.org/v0.4.3/webr.mjs").then((m) => window.WebR = m.WebR);
+    window.__webrImportPromise = import("https://webr.r-wasm.org/v0.4.3/webr.mjs").then((m) => window.WebR = m.WebR);
   return Promise.race([window.__webrImportPromise, new Promise((_, r) => setTimeout(() => r(new Error("WebR runtime load timeout")), timeoutMs))]);
 }
 function ggEsc(x) {
