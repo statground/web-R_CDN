@@ -30,6 +30,335 @@ function normalizeNoticeRoute() {
     init_url = "/intro/notice/";
 }
 
+function createNoticeEditorFallback(textarea) {
+    return {
+        getHTML: () => textarea ? textarea.value : "",
+        setHTML: (html) => {
+            if (textarea) {
+                textarea.value = html || "";
+            }
+        },
+    };
+}
+
+function createNoticeEditorFallbackInHost(host, initialHTML = "") {
+    if (!host) {
+        return null;
+    }
+    host.innerHTML = "";
+    const textarea = document.createElement("textarea");
+    textarea.id = "txt_content";
+    textarea.name = "txt_content";
+    textarea.className = "w-full min-h-[500px] rounded-lg border border-gray-300 p-4 text-sm";
+    textarea.setAttribute("rows", "18");
+    textarea.setAttribute("placeholder", "공지 내용을 입력해주세요.");
+    textarea.value = initialHTML || "";
+    host.appendChild(textarea);
+    return createNoticeEditorFallback(textarea);
+}
+
+function getNoticeStorageKey() {
+    const currentMode = getNoticeMode() || "write";
+    const articleID = (typeof orderID === "undefined" || orderID == null || orderID === "" || orderID === "None") ? "new" : orderID;
+    return ["web-r", "intro", "notice", currentMode, articleID].join(":");
+}
+
+async function mountSolidNoticeEditor(initialHTML = null) {
+    const host = document.getElementById("div_editor");
+    if (!host) {
+        return null;
+    }
+
+    const editorOptions = {
+        placeholder: "공지 내용을 입력해주세요.",
+        storageKey: getNoticeStorageKey(),
+        textareaID: "txt_content",
+        textareaName: "txt_content",
+        restoreDraft: getNoticeMode() !== "edit",
+        ribbonExpanded: false,
+    };
+    if (typeof initialHTML === "string") {
+        editorOptions.html = initialHTML;
+    }
+
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.mountHost === "function") {
+        return await window.WebRSolidEditor.mountHost(host, editorOptions);
+    }
+
+    return createNoticeEditorFallbackInHost(host, typeof initialHTML === "string" ? initialHTML : "");
+}
+
+function getNoticeEditorHTML(editorInstance) {
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.getHTML === "function") {
+        return window.WebRSolidEditor.getHTML(editorInstance);
+    }
+    if (editorInstance && typeof editorInstance.__hostMirrorNow === "function") {
+        return editorInstance.__hostMirrorNow(true);
+    }
+    if (editorInstance && typeof editorInstance.getHTML === "function") {
+        return editorInstance.getHTML();
+    }
+
+    const textarea = document.getElementById("txt_content");
+    return textarea ? textarea.value : "";
+}
+
+function setNoticeEditorHTML(editorInstance, html) {
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.setHTML === "function") {
+        if (window.WebRSolidEditor.setHTML(editorInstance, html)) {
+            return;
+        }
+    }
+    if (editorInstance && typeof editorInstance.setHTML === "function") {
+        editorInstance.setHTML(html || "");
+        if (typeof editorInstance.__hostMirrorNow === "function") {
+            editorInstance.__hostMirrorNow(true);
+        }
+        return;
+    }
+
+    const textarea = document.getElementById("txt_content");
+    if (textarea) {
+        textarea.value = html || "";
+    }
+}
+
+function isNoticeContentEmpty(html) {
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.isEmpty === "function") {
+        return window.WebRSolidEditor.isEmpty(html);
+    }
+    const raw = String(html || "").trim();
+    if (!raw) {
+        return true;
+    }
+    if (/<(img|video|audio|iframe|table|pre|code|figure|hr|math|svg)\b/i.test(raw)) {
+        return false;
+    }
+    return raw
+        .replace(/<br\s*\/?>/gi, "")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/<[^>]*>/g, "")
+        .trim() === "";
+}
+
+const noticeAttachmentState = {
+    articleFiles: [],
+    commentFiles: {},
+};
+
+function noticeFileHref(raw) {
+    raw = String(raw || "").trim();
+    if (!raw) return "";
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+    const normalizedPath = raw.startsWith("/") ? raw : "/" + raw;
+    return window.location.protocol + "//" + window.location.host + normalizedPath;
+}
+
+function normalizeNoticeAttachments(data) {
+    const fromArray = Array.isArray(data && data.attachments) ? data.attachments : [];
+    const attachments = fromArray
+        .map((item) => {
+            const fileURL = item.file_url || item.url_file || "";
+            const fileName = item.file_name || item.origin_file_name || fileURL;
+            return { uuid: item.uuid || "", file_url: fileURL, url_file: fileURL, file_name: fileName, origin_file_name: fileName };
+        })
+        .filter((item) => item.file_url || item.file_name);
+    if (attachments.length === 0 && data && data.file_url) {
+        attachments.push({ uuid: data.uuid_file || "", file_url: data.file_url, url_file: data.file_url, file_name: data.file_name || data.file_url, origin_file_name: data.file_name || data.file_url });
+    }
+    return attachments;
+}
+
+function noticeQueuedArticleFiles() {
+    return noticeAttachmentState.articleFiles || [];
+}
+
+function noticeQueuedCommentFiles(commentId) {
+    const key = commentId == null ? "new" : String(commentId);
+    return (noticeAttachmentState.commentFiles && noticeAttachmentState.commentFiles[key]) || [];
+}
+
+function noticeAppendQueuedFiles(currentFiles, fileList) {
+    const files = Array.from(fileList || []).filter(Boolean);
+    const next = currentFiles ? currentFiles.slice() : [];
+    files.forEach((file) => {
+        const duplicate = next.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified);
+        if (!duplicate) next.push(file);
+    });
+    return next;
+}
+
+function queueNoticeArticleFiles(fileList) {
+    noticeAttachmentState.articleFiles = noticeAppendQueuedFiles(noticeQueuedArticleFiles(), fileList);
+    renderNoticeArticleAttachmentControl();
+}
+
+function queueNoticeCommentFiles(commentId, fileList) {
+    const key = commentId == null ? "new" : String(commentId);
+    noticeAttachmentState.commentFiles[key] = noticeAppendQueuedFiles(noticeQueuedCommentFiles(key), fileList);
+    renderNoticeCommentAttachmentControl(key);
+}
+
+function removeNoticeArticleFile(index) {
+    noticeAttachmentState.articleFiles = noticeQueuedArticleFiles().filter((_, i) => i !== index);
+    renderNoticeArticleAttachmentControl();
+}
+
+function removeNoticeCommentFile(commentId, index) {
+    const key = commentId == null ? "new" : String(commentId);
+    noticeAttachmentState.commentFiles[key] = noticeQueuedCommentFiles(key).filter((_, i) => i !== index);
+    renderNoticeCommentAttachmentControl(key);
+}
+
+function clearNoticeArticleFiles() {
+    noticeAttachmentState.articleFiles = [];
+    renderNoticeArticleAttachmentControl();
+}
+
+function clearNoticeCommentFiles(commentId) {
+    const key = commentId == null ? "new" : String(commentId);
+    noticeAttachmentState.commentFiles[key] = [];
+    renderNoticeCommentAttachmentControl(key);
+}
+
+function NoticeAttachmentDropZone(props) {
+    const target = props.target || "article";
+    const commentId = props.commentId == null ? "new" : String(props.commentId);
+    const inputId = target === "article" ? "id_file_upload" : "id_file_upload_" + commentId;
+    const files = target === "article" ? noticeQueuedArticleFiles() : noticeQueuedCommentFiles(commentId);
+    const existing = props.existing || [];
+    const onFiles = (fileList) => target === "article" ? queueNoticeArticleFiles(fileList) : queueNoticeCommentFiles(commentId, fileList);
+    const onDrop = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onFiles(event.dataTransfer ? event.dataTransfer.files : []);
+    };
+    const onDragOver = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+    return (
+        <div class="p-4 w-full rounded-lg border border-dashed border-blue-300 bg-blue-50" onDrop={onDrop} onDragOver={onDragOver}>
+            <input type="file" name={inputId} id={inputId} accept="*" class="hidden" multiple
+                   onChange={(event) => {
+                       onFiles(event.target.files);
+                       event.target.value = "";
+                   }} />
+            <div class="flex flex-row justify-between items-center gap-3 md:flex-col md:items-start">
+                <div class="text-sm text-gray-700">
+                    <p class="font-semibold">파일을 끌어다 놓거나 선택해주세요.</p>
+                    <p class="text-xs text-gray-500">여러 파일을 한 번에 첨부할 수 있습니다.</p>
+                </div>
+                <button type="button"
+                        class="flex flex-row justify-center items-center py-1.5 px-4 text-white bg-blue-700 font-medium rounded-lg text-center text-sm w-fit hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
+                        onClick={() => {
+                            const input = document.getElementById(inputId);
+                            if (input) input.click();
+                        }}>
+                    <img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg" class="w-4 h-4 mr-2" />
+                    파일 선택
+                </button>
+            </div>
+            {existing.length > 0 && (
+                <div class="mt-3 space-y-1">
+                    {existing.map((file, index) => (
+                        <a key={"existing_notice_" + index} href={noticeFileHref(file.file_url || file.url_file)} target="_blank" class="block w-fit text-xs text-gray-600 hover:underline">
+                            기존 첨부: {file.file_name || file.origin_file_name || file.file_url}
+                        </a>
+                    ))}
+                </div>
+            )}
+            {files.length > 0 && (
+                <div class="mt-3 flex flex-col gap-2">
+                    {files.map((file, index) => (
+                        <div key={file.name + "_" + index} class="flex flex-row justify-between items-center gap-2 rounded-md bg-white border border-blue-100 px-3 py-2 text-sm">
+                            <span class="truncate">{file.name}</span>
+                            <button type="button" class="text-xs text-red-600 hover:underline" onClick={() => target === "article" ? removeNoticeArticleFile(index) : removeNoticeCommentFile(commentId, index)}>삭제</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function renderNoticeArticleAttachmentControl(existingData) {
+    const host = document.getElementById("div_article_file_control");
+    if (!host) return;
+    const existing = existingData ? normalizeNoticeAttachments(existingData) : [];
+    ReactDOM.render(<NoticeAttachmentDropZone target="article" existing={existing} />, host);
+}
+
+function renderNoticeCommentAttachmentControl(commentId) {
+    const key = commentId == null ? "new" : String(commentId);
+    ["div_comment_file_control_" + key, "div_comment_edit_file_control_" + key].forEach((hostID) => {
+        const host = document.getElementById(hostID);
+        if (!host) return;
+        ReactDOM.render(<NoticeAttachmentDropZone target="comment" commentId={key} />, host);
+    });
+}
+
+async function uploadNoticeQueuedFiles(files, options = {}) {
+    const uploadFiles = Array.from(files || []).filter(Boolean);
+    for (let index = 0; index < uploadFiles.length; index += 1) {
+        const formData = new FormData();
+        formData.append("file_input", uploadFiles[index]);
+        formData.append("host", window.location.href.toString());
+        formData.append("note", options.note || "Article");
+        formData.append("active", 1);
+        formData.append("attachment_scope", options.scope || "");
+        formData.append("attachment_order", index);
+        if (options.articleUUID) formData.append("uuid_article", options.articleUUID);
+        if (options.commentUUID) formData.append("uuid_comment", options.commentUUID);
+        const result = await fetch("/blank/ajax_file_upload/", {
+            method: "POST",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+            body: formData,
+        }).then(res => res.json());
+        if (result && result.error) throw new Error(result.error);
+    }
+}
+
+function getNoticeCommentStorageKey(commentId) {
+    const articleID = (typeof orderID === "undefined" || orderID == null || orderID === "" || orderID === "None") ? "new" : orderID;
+    return ["web-r", "intro", "notice", "comment", articleID, commentId || "new"].join(":");
+}
+
+function createNoticeCommentFallbackInHost(host, commentId, initialHTML = "") {
+    if (!host) return null;
+    host.innerHTML = "";
+    const textarea = document.createElement("textarea");
+    textarea.id = "txt_content_comment_" + commentId;
+    textarea.name = "txt_content_comment_" + commentId;
+    textarea.className = "w-full min-h-[220px] rounded-lg border border-gray-300 p-3 text-sm";
+    textarea.setAttribute("rows", "8");
+    textarea.setAttribute("placeholder", "댓글을 입력해주세요.");
+    textarea.value = initialHTML || "";
+    host.appendChild(textarea);
+    return createNoticeEditorFallback(textarea);
+}
+
+async function mountSolidNoticeCommentEditor(commentId, initialHTML = "", hostID = null) {
+    const key = commentId == null ? "new" : String(commentId);
+    const defaultHostID = key === "new" ? "div_community_read_comment_new_form" : "div_community_read_comment_new_" + key + "_form";
+    const host = document.getElementById(hostID || defaultHostID);
+    if (!host) return null;
+    const textareaID = "txt_content_comment_" + key;
+    const options = {
+        placeholder: "댓글을 입력해주세요.",
+        storageKey: getNoticeCommentStorageKey(key),
+        textareaID: textareaID,
+        textareaName: textareaID,
+        restoreDraft: !hostID,
+        ribbonExpanded: false,
+    };
+    if (typeof initialHTML === "string") options.html = initialHTML;
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.mountHost === "function") {
+        return await window.WebRSolidEditor.mountHost(host, options);
+    }
+    return createNoticeCommentFallbackInHost(host, key, initialHTML || "");
+}
+
 // ===== scripts/common/div/Div_page_header.js =====
 function Div_page_header(props) {
     return (
@@ -397,7 +726,7 @@ async function click_btn_search() {
 async function get_article_list(mode) {
     // 공통 컴포넌트 추출
     const ArticleList = ({ data, isMain = false }) => {
-        const article_list = Object.keys(data).map(key => 
+        const article_list = Object.keys(data).map(key =>
             <Div_new_article_list key={key} data={data[key]} />
         );
 
@@ -430,20 +759,20 @@ async function get_article_list(mode) {
     if (mode === "init" || mode === "search") {
         page_num = 1;
         ReactDOM.render(<Div_article_list_skeleton />, document.getElementById("div_article_list"));
-        
+
         if (mode === "search") {
             request_data.append('txt_search', document.getElementById("txt_search").value.trim());
         }
     } else {
         page_num += 1;
         ReactDOM.render(
-            <Div_article_list_skeleton />, 
+            <Div_article_list_skeleton />,
             document.getElementById(`div_article_list_${page_num}`)
         );
     }
 
     request_data.append('page', page_num);
-    
+
     // 데이터 가져오기
     const data = await fetch("/blank/ajax_board/get_article_list/", {
         method: "post",
@@ -453,13 +782,13 @@ async function get_article_list(mode) {
 
     // 결과 렌더링
     article_counter = data["count"].cnt;
-    const targetId = mode === "init" || mode === "search" 
+    const targetId = mode === "init" || mode === "search"
         ? "div_article_list"
         : `div_article_list_${page_num}`;
 
     ReactDOM.render(
-        <ArticleList 
-            data={data.list} 
+        <ArticleList
+            data={data.list}
             isMain={mode === "init" || mode === "search"}
         />,
         document.getElementById(targetId)
@@ -475,7 +804,7 @@ function notice_list_set_main() {
 		return (
 			<div class="flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto md:px-8">
 				<Div_page_header title={header_title} subtitle={header_subtitle} />
-			
+
 				<div id="div_community_list" class="flex flex-col justify-center items-center w-full space-y-4">
 					<div class="grid grid-cols-3 justify-center items-start w-full gap-4 md:grid-cols-1">
 						<div id="div_article_list" class="col-span-2 w-full">
@@ -497,7 +826,7 @@ function notice_list_set_main() {
 
 							<div class="flex flex-col justify-center items-center w-full space-y-2 border border-gray-200 p-4 rounded-xl">
 								<p class="flex flex-row text-start w-full">검색</p>
-								<input type="text" id="txt_search" 
+								<input type="text" id="txt_search"
 									   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
 											  focus:ring-blue-500 focus:border-blue-500" />
 
@@ -509,7 +838,7 @@ function notice_list_set_main() {
 									</button>
 								</div>
 							</div>
-							
+
 							<Div_sidelist_skeleton id={"div_article_famous_list"} title={"최근 인기 글"} />
 							<Div_sidelist_skeleton id={"div_new_comment_list"} title={"최근 댓글"} />
 							<Div_sidelist_skeleton id={"div_my_article_list"} title={"내가 쓴 글"} />
@@ -518,7 +847,7 @@ function notice_list_set_main() {
 						</div>
 					</div>
 				</div>
-				
+
 			</div>
 		)
 	}
@@ -533,7 +862,7 @@ function notice_list_set_main() {
 	window.addEventListener("scroll", () => {
 		// 100을 더하면 스크롤을 끝까지 내리기 100px 전에 데이터를 받아올 수 있다.
 		const isScrollEnded = window.innerHeight + window.scrollY + 1 >= document.body.offsetHeight;
-	  
+
 		if (isScrollEnded && !toggle_page && ((page_num * 20) < article_counter)) {
 			get_article_list("next")
 		}
@@ -561,7 +890,7 @@ let data_file = [];
 // ===== scripts/common/board/read/Div_article_read_buttons_20250127_0344.js =====
 function Div_article_read_buttons(props) {
 	const btnClass = "font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full"
-	const writeBtn = `text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 ${btnClass} 
+	const writeBtn = `text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 ${btnClass}
 					  hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300`
 	const listBtn = `text-gray-900 bg-white border border-gray-900 ${btnClass}
 					 focus:outline-none hover:bg-gray-300 focus:ring-4 focus:ring-gray-100`
@@ -573,7 +902,7 @@ function Div_article_read_buttons(props) {
 	return (
 		<div class="flex flex-col justify-center items-center w-full space-y-2">
 			<div class="flex flex-col justify-center items-center space-y-2 w-full">
-				<button type="button" 
+				<button type="button"
 						onClick={() => gv_username ? location.href=init_url+'write/' : alert("로그인이 필요합니다.")}
 						class={writeBtn}>
 					새 글 쓰기
@@ -651,15 +980,15 @@ async function click_btn_delete() {
 	if (confirm("정말로 삭제할까요?")) {
 		const request_data = new FormData();
 		request_data.append('uuid', orderID);
-		
+
 		const data = await fetch("/blank/ajax_board/delete_article/", {
-							method: "post", 
+							method: "post",
 							headers: { "X-CSRFToken": getCookie("csrftoken"), },
 							body: request_data
 							})
 							.then(res=> { return res.json(); })
 							.then(res=> { return res; });
-	
+
 		location.href=init_url
 	}
 }
@@ -697,7 +1026,8 @@ function Div_article_read_file(props) {
 
     const isRblogger = data.category_url === "rblogger";
     const hasUrl = !!data.url;
-    const hasFile = !!data.file_url;
+    const attachments = normalizeNoticeAttachments(data);
+    const hasFile = attachments.length > 0;
 
     // 🔒 비밀글: admin, writer 외에는 아예 보이지 않게
     if (
@@ -767,14 +1097,17 @@ function Div_article_read_file(props) {
                     <div class="w-full bg-gray-50 rounded-lg border border-gray-200"></div>
                 </form>
 
-                <div class="flex flex-row justify-center items-start w-full">
-                    <a
-                        href={"/" + data.file_url}
-                        target="_blank"
-                        class="flex flex-row justify-end items-center text-md font-normal w-fit space-x-2 cursor-pointer hover:bg-gray-100"
-                    >
-                        {data.file_name}
-                    </a>
+                <div class="flex flex-col justify-start items-start w-full gap-2">
+                    {attachments.map((file, index) => (
+                        <a
+                            key={"notice_file_" + index}
+                            href={noticeFileHref(file.file_url || file.url_file)}
+                            target="_blank"
+                            class="flex flex-row justify-end items-center text-md font-normal w-fit space-x-2 cursor-pointer hover:bg-gray-100"
+                        >
+                            {file.file_name || file.origin_file_name || file.file_url}
+                        </a>
+                    ))}
                 </div>
             </div>
         </section>
@@ -793,7 +1126,7 @@ function set_article() {
 		el: document.querySelector('#div_community_read_content'),
 		viewer: true,
 		initialValue: data_article.content
-	  });	
+	  });
 }
 
 // ===== scripts/common/board/read/comment/Div_btn_comment_editor_footer_button_20251122_1600.js =====
@@ -1006,49 +1339,8 @@ function Div_comment_form(props) {
         id={"div_comment_editor_footer_button_" + commentId}
       >
         <div class="flex flex-col justify-between items-center w-full space-x-2 space-y-2">
-          <div class="flex flex-row justify-start items-center w-full space-x-2">
-            <input
-              type="file"
-              name={"id_file_upload_" + commentId}
-              id={"id_file_upload_" + commentId}
-              accept="*"
-              class="hidden"
-              onChange={() =>
-                comment_file_action("upload", commentId)
-              }
-            />
-
-            <button
-              type="button"
-              class="flex flex-row justify-center items-center py-1.5 px-5 text-white 
-                     bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto
-                     hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
-              onClick={() =>
-                document
-                  .getElementById("id_file_upload_" + commentId)
-                  .click()
-              }
-            >
-              <img
-                src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg"
-                class="w-4 h-4 mr-2 md:mr-0"
-              />
-              <p class="block md:hidden">파일 첨부하기</p>
-            </button>
-
-            <p id={"txt_filename_" + commentId}></p>
-            <p
-              id={"txt_file_delete_" + commentId}
-              class="hidden"
-              onClick={() =>
-                comment_file_action("delete", commentId)
-              }
-            >
-              <img
-                src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg"
-                class="w-4 h-4"
-              />
-            </p>
+          <div class="w-full" id={"div_comment_file_control_" + commentId}>
+            <NoticeAttachmentDropZone target="comment" commentId={commentId} />
           </div>
 
           <div class="flex flex-row justify-end items-center w-full space-x-2">
@@ -1131,25 +1423,7 @@ function Div_article_read_comment(props) {
         />
       ));
 
-    let fileHref = "";
-    if (propsComment.data.file_url) {
-      const raw = propsComment.data.file_url;
-      if (
-        raw.startsWith("http://") ||
-        raw.startsWith("https://")
-      ) {
-        fileHref = raw;
-      } else {
-        const normalizedPath = raw.startsWith("/")
-          ? raw
-          : "/" + raw;
-        fileHref =
-          window.location.protocol +
-          "//" +
-          window.location.host +
-          normalizedPath;
-      }
-    }
+    const attachments = normalizeNoticeAttachments(propsComment.data);
 
     return (
       <article
@@ -1170,29 +1444,33 @@ function Div_article_read_comment(props) {
           id={"div_comment_" + propsComment.data.uuid}
         ></div>
 
-        {propsComment.data.file_url != null && (
-          <div class="flex flex-row justify-start items-center space-x-2 text-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.8"
-              stroke="currentColor"
-              class="w-4 h-4 text-gray-600"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l5 5v12a2 2 0 01-2 2z"
-              />
-            </svg>
-            <a
-              href={fileHref}
-              target="_blank"
-              class="hover:underline"
-            >
-              {propsComment.data.file_name}
-            </a>
+        {attachments.length > 0 && (
+          <div class="flex flex-col justify-start items-start gap-1 text-sm">
+            {attachments.map((file, index) => (
+              <div key={"notice_comment_file_" + propsComment.data.uuid + "_" + index} class="flex flex-row justify-start items-center space-x-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.8"
+                  stroke="currentColor"
+                  class="w-4 h-4 text-gray-600"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l5 5v12a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <a
+                  href={noticeFileHref(file.file_url || file.url_file)}
+                  target="_blank"
+                  class="hover:underline"
+                >
+                  {file.file_name || file.origin_file_name || file.file_url}
+                </a>
+              </div>
+            ))}
           </div>
         )}
 
@@ -1301,12 +1579,15 @@ async function click_btn_edit_comment(uuid_comment) {
           class="w-full"
           id={"div_comment_editor_main_" + props.uuid_comment}
         ></div>
+        <div class="w-full mt-2" id={"div_comment_edit_file_control_" + props.uuid_comment}>
+          <NoticeAttachmentDropZone target="comment" commentId={props.uuid_comment} />
+        </div>
         <div class="flex flex-row justify-end items-center w-full space-x-2 mt-2">
           <input
             id={"chk_secret_" + props.uuid_comment}
             type="checkbox"
             value=""
-            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-500 rounded 
+            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-500 rounded
                    focus:ring-blue-500 focus:ring-2"
           />
           <label
@@ -1339,24 +1620,12 @@ async function click_btn_edit_comment(uuid_comment) {
     document.getElementById("div_comment_" + uuid_comment)
   );
 
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-
-  editor[uuid_comment] = new toastui.Editor({
-    el: document.querySelector(
-      "#div_comment_editor_main_" + uuid_comment
-    ),
-    previewStyle: "vertical",
-    height: "250px",
-    initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell],
-  });
-
   const target = Object.values(data_comment).find(
     (item) => item.uuid === uuid_comment
   );
+  editor[uuid_comment] = await mountSolidNoticeCommentEditor(uuid_comment, target ? target.content || "" : "", "div_comment_editor_main_" + uuid_comment);
   if (target) {
-    editor[uuid_comment].setHTML(target.content);
+    setNoticeEditorHTML(editor[uuid_comment], target.content || "");
     const chkEl = document.getElementById("chk_secret_" + uuid_comment);
     if (chkEl) chkEl.checked = target.is_secret == 1;
   }
@@ -1413,7 +1682,7 @@ async function comment_action(action, uuid_comment) {
     return;
   }
 
-  const txt_content = currentEditor.getHTML();
+  const txt_content = getNoticeEditorHTML(currentEditor);
 
   const chk_id = isNew
     ? "chk_secret_new"
@@ -1421,11 +1690,7 @@ async function comment_action(action, uuid_comment) {
   const secretEl = document.getElementById(chk_id);
   const chk_secret = secretEl ? secretEl.checked : false;
 
-  if (
-    txt_content == null ||
-    txt_content === "" ||
-    txt_content === "<p><br></p>"
-  ) {
+  if (isNoticeContentEmpty(txt_content)) {
     alert("내용을 입력해주세요.");
     return;
   }
@@ -1462,66 +1727,64 @@ async function comment_action(action, uuid_comment) {
   request_data.append("txt_content", txt_content);
   request_data.append("chk_secret", chk_secret);
 
-  if (action === "submit") {
-    const fileIdx = data_file.findIndex(
-      (item) => item.uuid_comment === uuid_comment
-    );
-    if (fileIdx !== -1) {
-      request_data.append(
-        "attached_file",
-        data_file[fileIdx].uuid
-      );
-    }
-  }
-
-  await fetch(url, {
+  const responseData = await fetch(url, {
     method: "post",
     headers: { "X-CSRFToken": getCookie("csrftoken") },
     body: request_data,
   })
-    .then((res) => {
-      get_read_article_comment(orderID);
+    .then((res) => res.json());
 
-      const btnElAfter = document.getElementById(btnId);
-      if (btnElAfter) {
-        ReactDOM.render(
-          <Div_btn_comment_editor_footer_button
-            uuid_comment={uuid_comment}
-            function={() =>
-              comment_action(action, uuid_comment)
-            }
-          />,
-          btnElAfter
-        );
-      }
-    })
-    .then((res) => res);
+  if (responseData && responseData.error) {
+    alert(responseData.error);
+    const btnElAfterError = document.getElementById(btnId);
+    if (btnElAfterError) {
+      ReactDOM.render(
+        <Div_btn_comment_editor_footer_button
+          uuid_comment={uuid_comment}
+          function={() =>
+            comment_action(action, uuid_comment)
+          }
+        />,
+        btnElAfterError
+      );
+    }
+    return;
+  }
+
+  const savedCommentUUID = responseData && responseData.uuid ? responseData.uuid : uuid_comment;
+  try {
+    await uploadNoticeQueuedFiles(noticeQueuedCommentFiles(uuid_comment), {
+      note: "Comment",
+      scope: "comment",
+      articleUUID: orderID,
+      commentUUID: savedCommentUUID,
+    });
+    clearNoticeCommentFiles(uuid_comment);
+  } catch (error) {
+    alert("댓글은 저장되었지만 파일 업로드에 실패했습니다: " + error.message);
+  }
+
+  get_read_article_comment(orderID);
+
+  const btnElAfter = document.getElementById(btnId);
+  if (btnElAfter) {
+    ReactDOM.render(
+      <Div_btn_comment_editor_footer_button
+        uuid_comment={uuid_comment}
+        function={() =>
+          comment_action(action, uuid_comment)
+        }
+      />,
+      btnElAfter
+    );
+  }
 }
 
 
 // ===== scripts/common/board/read/comment/comment_file_action_20251122_1600.js =====
 function comment_file_action(action, uuid_comment) {
   if (action === "delete") {
-    const idx = data_file.findIndex(
-      (item) => item.uuid_comment === uuid_comment
-    );
-    if (idx !== -1) data_file.splice(idx, 1);
-
-    const inputEl = document.getElementById(
-      "id_file_upload_" + uuid_comment
-    );
-    if (inputEl) inputEl.value = "";
-
-    const nameEl = document.getElementById(
-      "txt_filename_" + uuid_comment
-    );
-    if (nameEl) nameEl.innerHTML = "";
-
-    const delEl = document.getElementById(
-      "txt_file_delete_" + uuid_comment
-    );
-    if (delEl) delEl.className = "hidden";
-
+    clearNoticeCommentFiles(uuid_comment);
     return;
   }
 
@@ -1531,48 +1794,8 @@ function comment_file_action(action, uuid_comment) {
     );
     if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
 
-    const formData = new FormData();
-    formData.append("file_input", inputEl.files[0]);
-    formData.append("host", window.location.href.toString());
-    formData.append("note", "Comment");
-    formData.append("active", 1);
-
-    $.ajax({
-      type: "POST",
-      enctype: "multipart/form-data",
-      url: "/blank/ajax_file_upload/",
-      data: formData,
-      processData: false,
-      contentType: false,
-      cache: false,
-      timeout: 600000,
-      success: function (filedata) {
-        filedata["uuid_comment"] = uuid_comment;
-
-        const existingIndex = data_file.findIndex(
-          (item) => item.uuid_comment === uuid_comment
-        );
-        if (existingIndex !== -1) {
-          data_file[existingIndex] = filedata;
-        } else {
-          data_file.push(filedata);
-        }
-
-        const nameEl = document.getElementById(
-          "txt_filename_" + uuid_comment
-        );
-        if (nameEl)
-          nameEl.innerHTML = filedata.origin_file_name;
-
-        const delEl = document.getElementById(
-          "txt_file_delete_" + uuid_comment
-        );
-        if (delEl) delEl.className = class_txt_file_delete;
-      },
-      error: function (e) {
-        console.error("File upload error:", e);
-      },
-    });
+    queueNoticeCommentFiles(uuid_comment, inputEl.files);
+    inputEl.value = "";
   }
 }
 
@@ -1593,12 +1816,12 @@ async function get_read_article_comment(orderID_param) {
     .then((res) => res.json())
     .then((res) => res);
 
-  set_comment();
+  await set_comment();
 }
 
 
 // ===== scripts/common/board/read/comment/set_comment_20251122_2103.js =====
-function set_comment() {
+async function set_comment() {
 	// 0) 댓글 데이터가 아예 없거나 비정상이면 바로 종료
 	if (!data_comment) {
 		console.warn("[set_comment] data_comment is null or undefined");
@@ -1672,65 +1895,39 @@ function set_comment() {
 		});
 	});
 
-	// 6) 에디터 플러그인 설정
-	const { Editor } = toastui;
-	const { colorSyntax, tableMergedCell } = Editor.plugin;
-	const editorConfig = {
-		previewStyle: 'vertical',
-		height: '250px',
-		initialEditType: 'wysiwyg',
-		plugins: [colorSyntax, tableMergedCell],
-		hooks: {
-			addImageBlobHook: async (blob, callback) => {
-				try {
-					const compressedBase64 = await compressImage(blob);
-					callback(compressedBase64, blob.name);
-				} catch (error) {
-					alert("이미지 처리에 실패했습니다. 다시 시도해 주세요.");
-				}
-			},
-		},
-	};
-
-	// 8) 새 댓글 에디터
-	const newFormEl = document.querySelector('#div_community_read_comment_new_form');
-	if (newFormEl) {
-		editor["new"] = new toastui.Editor({
-			el: newFormEl,
-			...editorConfig,
-		});
-		editor["new"].setHTML();
-	} else {
-		console.warn("[set_comment] #div_community_read_comment_new_form not found");
-	}
-
-	// 9) 대댓글 에디터
-	data_comment_upper.forEach(comment => {
-		if (!comment || !comment.uuid) return;
-		const replyEl = document.querySelector(
-			'#div_community_read_comment_new_' + comment.uuid + "_form"
-		);
-		if (!replyEl) {
-			// console.warn(`[set_comment] reply form for ${comment.uuid} not found`);
-			return;
+		// 8) 새 댓글 에디터
+		const newFormEl = document.querySelector('#div_community_read_comment_new_form');
+		if (newFormEl) {
+			editor["new"] = await mountSolidNoticeCommentEditor("new", "");
+			setNoticeEditorHTML(editor["new"], "");
+		} else {
+			console.warn("[set_comment] #div_community_read_comment_new_form not found");
 		}
-		editor[comment.uuid] = new toastui.Editor({
-			el: replyEl,
-			...editorConfig,
-		});
-		editor[comment.uuid].setHTML();
-	});
-}
+
+		// 9) 대댓글 에디터
+		for (const comment of data_comment_upper) {
+			if (!comment || !comment.uuid) continue;
+			const replyEl = document.querySelector(
+				'#div_community_read_comment_new_' + comment.uuid + "_form"
+			);
+			if (!replyEl) {
+				// console.warn(`[set_comment] reply form for ${comment.uuid} not found`);
+				continue;
+			}
+			editor[comment.uuid] = await mountSolidNoticeCommentEditor(comment.uuid, "");
+			setNoticeEditorHTML(editor[comment.uuid], "");
+		}
+	}
 
 
 // ===== scripts/common/board/read/set_main_20251122_2104.js =====
 async function notice_read_set_main() {
-	function Div_main() {    
+	function Div_main() {
 		return (
 			<div class="flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto
 						md:px-8">
 				<Div_page_header title={header_title} subtitle={header_subtitle} />
-			
+
 				<div class="flex flex-col justify-center items-center w-full space-y-4">
 					<div class="grid grid-cols-3 justify-center items-start w-full gap-4 md:grid-cols-1">
 						<div class="col-span-2 w-full">
@@ -1750,7 +1947,7 @@ async function notice_read_set_main() {
 
 						<div class="flex flex-col justify-center items-start w-full space-y-4">
 							<div id="div_article_read_buttons" class="w-full"></div>
-							
+
 							<Div_sidelist_skeleton id={"div_article_famous_list"} title={"최근 인기 글"} />
 							<Div_sidelist_skeleton id={"div_new_comment_list"} title={"최근 댓글"} />
 							<Div_sidelist_skeleton id={"div_my_article_list"} title={"내가 쓴 글"} />
@@ -1759,7 +1956,7 @@ async function notice_read_set_main() {
 						</div>
 					</div>
 				</div>
-				
+
 			</div>
 		)
 	}
@@ -1799,42 +1996,31 @@ let data = null
 let class_txt_file_delete = "rounded-lg hover:bg-red-100 cursor-pointer"
 
 // ===== scripts/common/board/write/Div_main.js =====
-function Div_main(props) {    
+function Div_main(props) {
 	return (
 		<div class="max-w-screen-xl px-6 py-8 mx-auto space-y-4 md">
 			<div id="div_title" class="w-full">
 				<input type="text" placeholder="제목을 입력해주세요." id="txt_title" name="txt_title"
-					   class="w-full h-[48px] rounded-lg resize-none scroll-hide 
+					   class="w-full h-[48px] rounded-lg resize-none scroll-hide
 							  text-start text-[14px] font-[500] border-gray-500
 							  focus:ring-gray-700 focus:border-gray-700" />
 			</div>
 
 			<div id="div_checker" class="flex flex-row justify-end items-center w-full">
 				<div class="flex items-center mb-4">
-					<input id="chk_secret" type="checkbox" value="" 
-						   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded 
+					<input id="chk_secret" type="checkbox" value=""
+						   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded
 								  focus:ring-blue-500 dark:focus:ring-blue-600 focus:ring-2" />
 					<label for="chk_secret" class="ms-2 text-sm font-medium text-gray-900">비밀글로 작성하기 (본인과 관리자만 읽을 수 있습니다.)</label>
 				</div>
 			</div>
 
-			<div id="div_editor" class="w-full"></div>
+			<div id="div_editor" class="webr-solid-editor-shell w-full"></div>
 
-			<div class="flex flex-row justify-start items-center space-x-4">
-				<button class="flex flex-row justify-center items-center py-1.5 px-5 text-white 
-							bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto
-							hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
-						onClick={() => document.getElementById('id_file_upload').click()} >
-					<img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg" class="w-4 h-4 mr-2" />
-					파일 첨부하기
-				</button>
-				<p id="txt_filename"></p>
-				<p id="txt_file_delete" class="hidden" onClick={() => click_delete_file()}>
-					<img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg" class="w-4 h-4" />
-				</p>
-				
-			</div>
-			
+				<div class="w-full" id="div_article_file_control">
+					<NoticeAttachmentDropZone target="article" />
+				</div>
+
 			<div class="w-full" id="div_button_list">
 				<Div_button />
 			</div>
@@ -1889,42 +2075,21 @@ function Div_button_loading() {
 // ===== scripts/common/board/write/check_file_upload_20240526_2322.js =====
 // 프로필 사진 - 새 파일 업로드
 function check_file_upload() {
-	var formData = new FormData();
-	formData.append('file_input', document.getElementById('id_file_upload').files[0]);
-	formData.append('host', window.location.href.toString());
-	formData.append('note', "Article");
-	formData.append('active', 1);
-
-	$.ajax({
-		type: "POST",
-		enctype: 'multipart/form-data',
-		url: "/blank/ajax_file_upload/",
-		data: formData,
-		processData: false,
-		contentType: false,
-		cache: false,
-		timeout: 600000,
-		success: function (filedata) {
-			data_file = filedata
-			document.getElementById("txt_filename").innerHTML = data_file.origin_file_name
-			document.getElementById("txt_file_delete").className = class_txt_file_delete
-		},
-		error: function (e) {}
-	});
+	const inputEl = document.getElementById('id_file_upload');
+	if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+	queueNoticeArticleFiles(inputEl.files);
+	inputEl.value = "";
 }
 
 // ===== scripts/common/board/write/click_delete_file.js =====
 function click_delete_file() {
-	data_file = null
-	document.getElementById('id_file_upload').value = "";
-	document.getElementById("txt_filename").innerHTML = null
-	document.getElementById("txt_file_delete").className = "hidden"
+	clearNoticeArticleFiles();
 }
 
 // ===== scripts/common/board/write/click_btn_submit_20240526_1326.js =====
 async function click_btn_submit() {
 	let txt_title = document.getElementById("txt_title").value.trim()
-	let txt_content = editor.getHTML()
+	let txt_content = getNoticeEditorHTML(editor)
 	let chk_secret = document.getElementById("chk_secret").checked      // true / false
 
 	if (!toggle_click_submit) {
@@ -1939,10 +2104,10 @@ async function click_btn_submit() {
 
 
 		// 내용을 입력하지 않음
-		} else if (txt_content == null || txt_content == "" || txt_content == "<p><br></p>") {
+		} else if (isNoticeContentEmpty(txt_content)) {
 			alert("내용을 입력해주세요.");
 
-			
+
 		// 게시글 등록
 		} else {
 			const request_data = new FormData();
@@ -1951,20 +2116,33 @@ async function click_btn_submit() {
 			request_data.append('txt_title', txt_title);
 			request_data.append('txt_content', txt_content);
 			request_data.append('chk_secret', chk_secret);
-			if (data_file != null) {
-				request_data.append('attached_file', data_file.uuid);
-			}
-			
-			const data = await fetch("/blank/ajax_board/insert_article/", {
-								method: "post", 
-								headers: { "X-CSRFToken": getCookie("csrftoken"), },
+				const data = await fetch("/blank/ajax_board/insert_article/", {
+									method: "post",
+									headers: { "X-CSRFToken": getCookie("csrftoken"), },
 								body: request_data
 								})
-								.then(res=> { return res.json(); })
-								.then(res=> { return res; });
+									.then(res=> { return res.json(); })
+									.then(res=> { return res; });
 
-			location.href=init_url + "read/" + data.uuid + "/"
-		}
+				if (data && data.error) {
+					alert(data.error);
+					toggle_click_submit = false;
+					ReactDOM.render(<Div_button />, document.getElementById("div_button_list"));
+					return;
+				}
+
+				try {
+					await uploadNoticeQueuedFiles(noticeQueuedArticleFiles(), {
+						note: "Article",
+						scope: "article",
+						articleUUID: data.uuid,
+					});
+				} catch (error) {
+					alert("게시글은 저장되었지만 파일 업로드에 실패했습니다: " + error.message);
+				}
+
+				location.href=init_url + "read/" + data.uuid + "/"
+			}
 
 
 		// 토글 OFF
@@ -1977,47 +2155,11 @@ async function click_btn_submit() {
 // ===============================
 // 게시판 메인 셋업
 // ===============================
-async function notice_write_set_main() {        
+async function notice_write_set_main() {
 	// Menu
 	if (gv_username != "") {
 		ReactDOM.render(<Div_main />, document.getElementById("div_main"))
-
-		const { Editor } = toastui;
-		const { colorSyntax } = Editor.plugin;
-		const { tableMergedCell } = Editor.plugin;
-
-		editor = new toastui.Editor({
-			el: document.querySelector('#div_editor'),
-			previewStyle: 'vertical',
-			height: '500px',
-			initialEditType: 'wysiwyg',
-			plugins: [colorSyntax, tableMergedCell],
-			hooks: {
-				addImageBlobHook: async (blob, callback) => {
-					try {
-						// console.log("이미지 처리 시작:", blob);
-
-						// blob → 리사이즈 + 압축 + (용량 초과 시) 품질 낮추기
-						// 필요하면 여기 숫자만 조절해서 정책 바꾸면 됨
-						const compressedBase64 = await compressImage(
-							blob,
-							1200,   // maxWidth
-							1200,   // maxHeight
-							0.8,    // 초기 quality
-							500     // 목표 최대 용량(KB) (대략 0.5MB)
-						);
-
-						// console.log("이미지 압축 및 변환 성공!");
-
-						// 압축된 Base64 데이터를 에디터에 삽입
-						callback(compressedBase64, blob.name || "image");
-					} catch (error) {
-						// console.error("이미지 처리 중 오류 발생:", error);
-						alert("이미지 처리에 실패했습니다. 다시 시도해 주세요.");
-					}
-				},
-			}
-		});
+		editor = await mountSolidNoticeEditor();
 
 	} else {
 		location.href = init_url
@@ -2043,42 +2185,31 @@ let data = null
 let class_txt_file_delete = "rounded-lg hover:bg-red-100 cursor-pointer"
 
 // ===== scripts/common/board/write/Div_main.js =====
-function Div_main(props) {    
+function Div_main(props) {
 	return (
 		<div class="max-w-screen-xl px-6 py-8 mx-auto space-y-4 md">
 			<div id="div_title" class="w-full">
 				<input type="text" placeholder="제목을 입력해주세요." id="txt_title" name="txt_title"
-					   class="w-full h-[48px] rounded-lg resize-none scroll-hide 
+					   class="w-full h-[48px] rounded-lg resize-none scroll-hide
 							  text-start text-[14px] font-[500] border-gray-500
 							  focus:ring-gray-700 focus:border-gray-700" />
 			</div>
 
 			<div id="div_checker" class="flex flex-row justify-end items-center w-full">
 				<div class="flex items-center mb-4">
-					<input id="chk_secret" type="checkbox" value="" 
-						   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded 
+					<input id="chk_secret" type="checkbox" value=""
+						   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded
 								  focus:ring-blue-500 dark:focus:ring-blue-600 focus:ring-2" />
 					<label for="chk_secret" class="ms-2 text-sm font-medium text-gray-900">비밀글로 작성하기 (본인과 관리자만 읽을 수 있습니다.)</label>
 				</div>
 			</div>
 
-			<div id="div_editor" class="w-full"></div>
+			<div id="div_editor" class="webr-solid-editor-shell w-full"></div>
 
-			<div class="flex flex-row justify-start items-center space-x-4">
-				<button class="flex flex-row justify-center items-center py-1.5 px-5 text-white 
-							bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto
-							hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
-						onClick={() => document.getElementById('id_file_upload').click()} >
-					<img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg" class="w-4 h-4 mr-2" />
-					파일 첨부하기
-				</button>
-				<p id="txt_filename"></p>
-				<p id="txt_file_delete" class="hidden" onClick={() => click_delete_file()}>
-					<img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg" class="w-4 h-4" />
-				</p>
-				
-			</div>
-			
+				<div class="w-full" id="div_article_file_control">
+					<NoticeAttachmentDropZone target="article" existing={data ? normalizeNoticeAttachments(data) : []} />
+				</div>
+
 			<div class="w-full" id="div_button_list">
 				<Div_button />
 			</div>
@@ -2133,34 +2264,16 @@ function Div_button_loading() {
 // ===== scripts/common/board/write/check_file_upload_20240526_2322.js =====
 // 프로필 사진 - 새 파일 업로드
 function check_file_upload() {
-	var formData = new FormData();
-	formData.append('file_input', document.getElementById('id_file_upload').files[0]);
-	formData.append('host', window.location.href.toString());
-	formData.append('note', "Article");
-	formData.append('active', 1);
-
-	$.ajax({
-		type: "POST",
-		enctype: 'multipart/form-data',
-		url: "/blank/ajax_file_upload/",
-		data: formData,
-		processData: false,
-		contentType: false,
-		cache: false,
-		timeout: 600000,
-		success: function (filedata) {
-			data_file = filedata
-			document.getElementById("txt_filename").innerHTML = data_file.origin_file_name
-			document.getElementById("txt_file_delete").className = class_txt_file_delete
-		},
-		error: function (e) {}
-	});
+	const inputEl = document.getElementById('id_file_upload');
+	if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+	queueNoticeArticleFiles(inputEl.files);
+	inputEl.value = "";
 }
 
 // ===== scripts/common/board/edit/click_btn_submit_20251129_1352.js =====
 async function click_btn_submit() {
     let txt_title = document.getElementById("txt_title").value.trim();
-    let txt_content = editor.getHTML();
+    let txt_content = getNoticeEditorHTML(editor);
     let chk_secret = document.getElementById("chk_secret").checked; // true / false
 
     if (!toggle_click_submit) {
@@ -2173,11 +2286,7 @@ async function click_btn_submit() {
             alert("제목을 입력해주세요.");
 
         // 내용을 입력하지 않음
-        } else if (
-            txt_content == null ||
-            txt_content == "" ||
-            txt_content == "<p><br></p>"
-        ) {
+        } else if (isNoticeContentEmpty(txt_content)) {
             alert("내용을 입력해주세요.");
 
         // 게시글 수정
@@ -2190,12 +2299,7 @@ async function click_btn_submit() {
             request_data.append("txt_content", txt_content);
             request_data.append("chk_secret", chk_secret);
 
-            // ✅ 새 파일이 있으면 그걸 사용
-            if (data_file != null) {
-                request_data.append("attached_file", data_file.file_name);
-
-            // ✅ 없으면 이전에 저장되어 있던 파일 정보 사용 (data가 null인지 체크)
-            } else if (data && data.file_url != null) {
+            if (data && data.file_url != null) {
                 request_data.append("attached_file", data.file_url);
             }
 
@@ -2206,6 +2310,23 @@ async function click_btn_submit() {
             })
                 .then((res) => res.json())
                 .then((res) => res);
+
+            if (response_data && response_data.error) {
+                alert(response_data.error);
+                toggle_click_submit = false;
+                ReactDOM.render(<Div_button />, document.getElementById("div_button_list"));
+                return;
+            }
+
+            try {
+                await uploadNoticeQueuedFiles(noticeQueuedArticleFiles(), {
+                    note: "Article",
+                    scope: "article",
+                    articleUUID: response_data.uuid || orderID,
+                });
+            } catch (error) {
+                alert("게시글은 저장되었지만 파일 업로드에 실패했습니다: " + error.message);
+            }
 
             location.href = init_url + "read/" + response_data.uuid + "/";
         }
@@ -2219,12 +2340,9 @@ async function click_btn_submit() {
 
 // ===== scripts/common/board/edit/click_delete_file_20240916_1757.js =====
 function click_delete_file() {
-	data_file = null
 	data.file_url = null
 	data.file_name = null
-	document.getElementById('id_file_upload').value = "";
-	document.getElementById("txt_filename").innerHTML = null
-	document.getElementById("txt_file_delete").className = "hidden"
+	clearNoticeArticleFiles();
 }
 
 // ===== scripts/common/board/edit/set_main_20251129_1352.js =====
@@ -2295,45 +2413,13 @@ async function notice_edit_set_main() {
     // 메인 편집 화면 렌더 (Div_main 은 이미 다른 JS에서 정의됨)
     ReactDOM.render(<Div_main />, document.getElementById("div_main"));
 
-    // ✅ toastui Editor 생성 (전역 editor 사용)
-    editor = new toastui.Editor({
-        el: document.querySelector("#div_editor"),
-        previewStyle: "vertical",
-        height: "500px",
-        initialEditType: "wysiwyg",
-        plugins: [
-            toastui.Editor.plugin.colorSyntax,
-            toastui.Editor.plugin.tableMergedCell,
-        ],
-        hooks: {
-            // 이미지 업로드 시 자동 압축 + 품질 조정
-            addImageBlobHook: async (blob, callback) => {
-                try {
-                    const compressedBase64 = await compressImage(
-                        blob,
-                        1200,  // maxWidth
-                        1200,  // maxHeight
-                        0.8,   // 초기 quality
-                        500    // 목표 최대 용량(KB)
-                    );
-
-                    callback(compressedBase64, blob.name || "image");
-                } catch (error) {
-                    alert("이미지 처리에 실패했습니다. 다시 시도해 주세요.");
-                }
-            },
-        },
-    });
-
     // 기존 데이터 세팅
     document.getElementById("txt_title").value = data.title;
-    editor.setHTML(data.content);
+    editor = await mountSolidNoticeEditor(data.content || "");
+    setNoticeEditorHTML(editor, data.content);
     document.getElementById("chk_secret").checked = data.is_secret == 1;
 
-    if (data.file_name) {
-        document.getElementById("txt_filename").innerHTML = data.file_name;
-        document.getElementById("txt_file_delete").className = class_txt_file_delete;
-    }
+    renderNoticeArticleAttachmentControl(data);
 }
 
 

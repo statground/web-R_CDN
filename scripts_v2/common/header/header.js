@@ -146,8 +146,8 @@ function Div_menu() {
       >
         <button
           type="button"
-          class="inline-flex items-center p-2 ml-1 text-sm text-gray-500 rounded-lg 
-                 hover:bg-gray-100 
+          class="inline-flex items-center p-2 ml-1 text-sm text-gray-500 rounded-lg
+                 hover:bg-gray-100
                  focus:outline-none focus:ring-2 focus:ring-gray-200"
           aria-label="Open main menu"
           aria-controls="div_menu_mobile"
@@ -213,7 +213,7 @@ function Div_menu() {
           href={props.url}
           class="flex flex-col justify-center items-center px-4 py-2 w-full hover:border hover:border-blue-300 hover:bg-blue-100"
         >
-          <img src={props.img_url} class={"object-scale-down h-[80px] mb-2"} />
+          <img src={props.img_url} class={"object-scale-down h-[80px] w-[120px] max-w-full mb-2"} />
           {props.title}
         </a>
       </li>
@@ -278,8 +278,8 @@ function Div_menu() {
       </nav>
 
 		{/* PC megamenu: Web-R */}
-		<div id="div_megamenu_webr" class="hidden">
-		  <div class="flex justify-center max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600 space-x-12">
+      <div id="div_megamenu_webr" class="hidden">
+		  <div class="grid grid-cols-4 max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600">
 			<ul class="my-4 space-y-4">
 			  <Div_sub_menu_pc_li_img
 				url={"/webr/"}
@@ -293,6 +293,14 @@ function Div_menu() {
 				url={"/webr/member/"}
 				img_url={"https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/R_logo.svg"}
 				title={"정회원 서버 접속"}
+			  />
+			</ul>
+
+			<ul class="my-4 space-y-4">
+			  <Div_sub_menu_pc_li_img
+				url={"/webr/2.0/"}
+				img_url={"https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/webr/advanced_webR.png"}
+				title={"Web-R 2.0"}
 			  />
 			</ul>
 
@@ -364,18 +372,25 @@ function Div_menu() {
       </div>
 
 
-		{/* PC megamenu: Workshop */}
-		<div id="div_megamenu_workshop" class="hidden">
-		  <div class="flex justify-center max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600">
-			<ul class="my-4 space-y-4">
-			  <Div_sub_menu_pc_li_img
-				url={"/workshop/youtube/"}
-				img_url={"https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg"}
-				title={"유튜브"}
-			  />
-			</ul>
-		  </div>
-		</div>
+      {/* PC megamenu: Workshop */}
+      <div id="div_megamenu_workshop" class="hidden">
+        <div class="grid grid-cols-4 max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600">
+          <ul class="my-4 space-y-4 col-start-2">
+            <Div_sub_menu_pc_li_img
+              url={"/workshop/youtube/"}
+              img_url={"https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg"}
+              title={"유튜브"}
+            />
+          </ul>
+          <ul class="my-4 space-y-4">
+            <Div_sub_menu_pc_li_img
+              url={"/workshop/"}
+              img_url={"https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_workshop.svg"}
+              title={"워크샵"}
+            />
+          </ul>
+        </div>
+      </div>
 
 
       {/* PC megamenu: Intro */}
@@ -420,6 +435,7 @@ function Div_menu() {
         <div id="div_menu_mobile_webr" class="hidden">
           <Div_sub_menu_mobile_li title={"무료 서버 접속"} url={"/webr/"} />
           <Div_sub_menu_mobile_li title={"정회원 서버 접속"} url={"/webr/member/"} />
+          <Div_sub_menu_mobile_li title={"Web-R 2.0"} url={"/webr/2.0/"} />
           {/* Web-R Notebook (MOBILE NEW) */}
           <Div_sub_menu_mobile_li title={"Web-R Notebook"} url={"/webr/notebook/"} />
         </div>
@@ -486,8 +502,8 @@ function Div_menu() {
           img_url={"https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_workshop.svg"}
         />
         <div id="div_menu_mobile_workshop" class="hidden">
-          {/* <Div_sub_menu_mobile_li title={"워크샵"} url={"/workshop/"} /> */}
           <Div_sub_menu_mobile_li title={"유튜브"} url={"/workshop/youtube/"} />
+          <Div_sub_menu_mobile_li title={"워크샵"} url={"/workshop/"} />
         </div>
 
         <Div_sub_menu_mobile_title

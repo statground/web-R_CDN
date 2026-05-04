@@ -20,7 +20,8 @@ const communityState = {
     articleEditor: null,
     commentEditors: {},
     articleFile: null,
-    commentFiles: [],
+    articleFiles: [],
+    commentFiles: {},
     listScrollBound: false,
 };
 
@@ -91,8 +92,9 @@ function resetEditorState() {
     communityState.articleEditor = null;
     communityState.articleData = null;
     communityState.articleFile = null;
+    communityState.articleFiles = [];
     communityState.commentEditors = {};
-    communityState.commentFiles = [];
+    communityState.commentFiles = {};
     communityState.commentData = null;
     communityState.commentUpper = [];
 }
@@ -110,6 +112,426 @@ function getEditorPlugins() {
         }
     } catch (e) {}
     return plugins;
+}
+
+function createArticleEditorFallback(textarea) {
+    return {
+        getHTML: () => textarea ? textarea.value : "",
+        setHTML: (html) => {
+            if (textarea) {
+                textarea.value = html || "";
+            }
+        },
+    };
+}
+
+function createArticleEditorFallbackInHost(host, initialHTML = "") {
+    if (!host) {
+        return null;
+    }
+    host.innerHTML = "";
+    const textarea = document.createElement("textarea");
+    textarea.id = "txt_content";
+    textarea.name = "txt_content";
+    textarea.className = "w-full min-h-[500px] rounded-lg border border-gray-300 p-4 text-sm";
+    textarea.setAttribute("rows", "18");
+    textarea.setAttribute("placeholder", "내용을 입력해주세요.");
+    textarea.value = initialHTML || "";
+    host.appendChild(textarea);
+    return createArticleEditorFallback(textarea);
+}
+
+function getArticleStorageKey() {
+    const board = (typeof url === "undefined" || url == null || url === "" || url === "None") ? "free" : url;
+    const currentMode = getCommunityMode() || "write";
+    const articleID = (typeof orderID === "undefined" || orderID == null || orderID === "" || orderID === "None") ? "new" : orderID;
+    return ["web-r", "community", board, currentMode, articleID].join(":");
+}
+
+async function mountSolidArticleEditor(initialHTML = null) {
+    const host = document.getElementById("div_editor");
+    if (!host) {
+        return null;
+    }
+
+    const editorOptions = {
+        placeholder: "내용을 입력해주세요.",
+        storageKey: getArticleStorageKey(),
+        textareaID: "txt_content",
+        textareaName: "txt_content",
+        restoreDraft: getCommunityMode() !== "edit",
+        ribbonExpanded: false,
+    };
+    if (typeof initialHTML === "string") {
+        editorOptions.html = initialHTML;
+    }
+
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.mountHost === "function") {
+        return await window.WebRSolidEditor.mountHost(host, editorOptions);
+    }
+
+    return createArticleEditorFallbackInHost(host, typeof initialHTML === "string" ? initialHTML : "");
+}
+
+function getArticleEditorHTML() {
+    const currentEditor = communityState.articleEditor;
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.getHTML === "function") {
+        return window.WebRSolidEditor.getHTML(currentEditor);
+    }
+    if (!currentEditor) {
+        const textarea = document.getElementById("txt_content");
+        return textarea ? textarea.value : "";
+    }
+
+    if (typeof currentEditor.__hostMirrorNow === "function") {
+        return currentEditor.__hostMirrorNow(true);
+    }
+    if (typeof currentEditor.getHTML === "function") {
+        return currentEditor.getHTML();
+    }
+
+    const textarea = document.getElementById("txt_content");
+    return textarea ? textarea.value : "";
+}
+
+function setArticleEditorHTML(html) {
+    const currentEditor = communityState.articleEditor;
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.setHTML === "function") {
+        if (window.WebRSolidEditor.setHTML(currentEditor, html)) {
+            return;
+        }
+    }
+    if (currentEditor && typeof currentEditor.setHTML === "function") {
+        currentEditor.setHTML(html || "");
+        if (typeof currentEditor.__hostMirrorNow === "function") {
+            currentEditor.__hostMirrorNow(true);
+        }
+        return;
+    }
+
+    const textarea = document.getElementById("txt_content");
+    if (textarea) {
+        textarea.value = html || "";
+    }
+}
+
+function isArticleContentEmpty(html) {
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.isEmpty === "function") {
+        return window.WebRSolidEditor.isEmpty(html);
+    }
+    const raw = String(html || "").trim();
+    if (!raw) {
+        return true;
+    }
+    if (/<(img|video|audio|iframe|table|pre|code|figure|hr|math|svg)\b/i.test(raw)) {
+        return false;
+    }
+    return raw
+        .replace(/<br\s*\/?>/gi, "")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/<[^>]*>/g, "")
+        .trim() === "";
+}
+
+function getFileHref(raw) {
+    raw = String(raw || "").trim();
+    if (!raw) {
+        return "";
+    }
+    if (raw.startsWith("http://") || raw.startsWith("https://")) {
+        return raw;
+    }
+    const normalizedPath = raw.startsWith("/") ? raw : "/" + raw;
+    return window.location.protocol + "//" + window.location.host + normalizedPath;
+}
+
+function normalizeAttachmentList(data) {
+    const fromArray = Array.isArray(data && data.attachments) ? data.attachments : [];
+    const attachments = fromArray
+        .map((item) => {
+            const fileURL = item.file_url || item.url_file || "";
+            const fileName = item.file_name || item.origin_file_name || fileURL;
+            return {
+                uuid: item.uuid || "",
+                file_url: fileURL,
+                url_file: fileURL,
+                file_name: fileName,
+                origin_file_name: fileName,
+            };
+        })
+        .filter((item) => item.file_url || item.file_name);
+
+    if (attachments.length === 0 && data && data.file_url) {
+        attachments.push({
+            uuid: data.uuid_file || "",
+            file_url: data.file_url,
+            url_file: data.file_url,
+            file_name: data.file_name || data.file_url,
+            origin_file_name: data.file_name || data.file_url,
+        });
+    }
+    return attachments;
+}
+
+function queuedArticleFiles() {
+    return communityState.articleFiles || [];
+}
+
+function queuedCommentFiles(commentId) {
+    const key = commentId == null ? "new" : String(commentId);
+    return (communityState.commentFiles && communityState.commentFiles[key]) || [];
+}
+
+function appendQueuedFiles(currentFiles, fileList) {
+    const files = Array.from(fileList || []).filter(Boolean);
+    const next = currentFiles ? currentFiles.slice() : [];
+    files.forEach((file) => {
+        const duplicate = next.some((item) => (
+            item.name === file.name &&
+            item.size === file.size &&
+            item.lastModified === file.lastModified
+        ));
+        if (!duplicate) {
+            next.push(file);
+        }
+    });
+    return next;
+}
+
+function queueArticleFiles(fileList) {
+    communityState.articleFiles = appendQueuedFiles(queuedArticleFiles(), fileList);
+    communityState.articleFile = null;
+    renderArticleAttachmentControl();
+}
+
+function queueCommentFiles(commentId, fileList) {
+    const key = commentId == null ? "new" : String(commentId);
+    communityState.commentFiles[key] = appendQueuedFiles(queuedCommentFiles(key), fileList);
+    renderCommentAttachmentControl(key);
+}
+
+function removeQueuedArticleFile(index) {
+    communityState.articleFiles = queuedArticleFiles().filter((_, i) => i !== index);
+    renderArticleAttachmentControl();
+}
+
+function removeQueuedCommentFile(commentId, index) {
+    const key = commentId == null ? "new" : String(commentId);
+    communityState.commentFiles[key] = queuedCommentFiles(key).filter((_, i) => i !== index);
+    renderCommentAttachmentControl(key);
+}
+
+function clearQueuedArticleFiles() {
+    communityState.articleFiles = [];
+    communityState.articleFile = null;
+    renderArticleAttachmentControl();
+}
+
+function clearQueuedCommentFiles(commentId) {
+    const key = commentId == null ? "new" : String(commentId);
+    communityState.commentFiles[key] = [];
+    renderCommentAttachmentControl(key);
+}
+
+function AttachmentDropZone(props) {
+    const target = props.target || "article";
+    const commentId = props.commentId == null ? "new" : String(props.commentId);
+    const inputId = target === "article" ? "id_file_upload" : "id_file_upload_" + commentId;
+    const files = target === "article" ? queuedArticleFiles() : queuedCommentFiles(commentId);
+    const existing = props.existing || [];
+    const compact = !!props.compact;
+    const onFiles = (fileList) => {
+        if (target === "article") {
+            queueArticleFiles(fileList);
+        } else {
+            queueCommentFiles(commentId, fileList);
+        }
+    };
+    const onDrop = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onFiles(event.dataTransfer ? event.dataTransfer.files : []);
+    };
+    const onDragOver = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+    const onRemove = (index) => {
+        if (target === "article") {
+            removeQueuedArticleFile(index);
+        } else {
+            removeQueuedCommentFile(commentId, index);
+        }
+    };
+
+    return (
+        <div class={(compact ? "p-3" : "p-4") + " w-full rounded-lg border border-dashed border-blue-300 bg-blue-50/40"}
+             onDrop={onDrop} onDragOver={onDragOver}>
+            <input type="file" name={inputId} id={inputId} accept="*" class="hidden" multiple
+                   onChange={(event) => {
+                       onFiles(event.target.files);
+                       event.target.value = "";
+                   }} />
+            <div class="flex flex-row justify-between items-center gap-3 md:flex-col md:items-start">
+                <div class="text-sm text-gray-700">
+                    <p class="font-semibold">파일을 끌어다 놓거나 선택해주세요.</p>
+                    <p class="text-xs text-gray-500">여러 파일을 한 번에 첨부할 수 있습니다.</p>
+                </div>
+                <button type="button"
+                        class="flex flex-row justify-center items-center py-1.5 px-4 text-white bg-blue-700 font-medium rounded-lg text-center text-sm w-fit hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
+                        onClick={() => {
+                            const input = document.getElementById(inputId);
+                            if (input) input.click();
+                        }}>
+                    <img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg" class="w-4 h-4 mr-2" />
+                    파일 선택
+                </button>
+            </div>
+            {existing.length > 0 && (
+                <div class="mt-3 space-y-1">
+                    {existing.map((file, index) => (
+                        <a key={"existing_" + index} href={getFileHref(file.file_url || file.url_file)} target="_blank"
+                           class="block w-fit text-xs text-gray-600 hover:underline">
+                            기존 첨부: {file.file_name || file.origin_file_name || file.file_url}
+                        </a>
+                    ))}
+                </div>
+            )}
+            {files.length > 0 && (
+                <div class="mt-3 flex flex-col gap-2">
+                    {files.map((file, index) => (
+                        <div key={file.name + "_" + index} class="flex flex-row justify-between items-center gap-2 rounded-md bg-white border border-blue-100 px-3 py-2 text-sm">
+                            <span class="truncate">{file.name}</span>
+                            <button type="button" class="text-xs text-red-600 hover:underline" onClick={() => onRemove(index)}>삭제</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function renderArticleAttachmentControl() {
+    const host = document.getElementById("div_article_file_control");
+    if (!host) {
+        return;
+    }
+    const existing = communityState.articleData ? normalizeAttachmentList(communityState.articleData) : [];
+    ReactDOM.render(<AttachmentDropZone target="article" existing={existing} />, host);
+}
+
+function renderCommentAttachmentControl(commentId) {
+    const key = commentId == null ? "new" : String(commentId);
+    ["div_comment_file_control_" + key, "div_comment_edit_file_control_" + key].forEach((hostID) => {
+        const host = document.getElementById(hostID);
+        if (!host) {
+            return;
+        }
+        ReactDOM.render(<AttachmentDropZone target="comment" commentId={key} compact={true} />, host);
+    });
+}
+
+async function uploadQueuedFiles(files, options = {}) {
+    const uploadFiles = Array.from(files || []).filter(Boolean);
+    for (let index = 0; index < uploadFiles.length; index += 1) {
+        const formData = new FormData();
+        formData.append("file_input", uploadFiles[index]);
+        formData.append("host", window.location.href.toString());
+        formData.append("note", options.note || "Article");
+        formData.append("active", 1);
+        formData.append("attachment_scope", options.scope || "");
+        formData.append("attachment_order", index);
+        if (options.articleUUID) {
+            formData.append("uuid_article", options.articleUUID);
+        }
+        if (options.commentUUID) {
+            formData.append("uuid_comment", options.commentUUID);
+        }
+        const result = await fetch("/blank/ajax_file_upload/", {
+            method: "POST",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+            body: formData,
+        }).then(res => res.json());
+        if (result && result.error) {
+            throw new Error(result.error);
+        }
+    }
+}
+
+function createCommentEditorFallbackInHost(host, commentId, initialHTML = "") {
+    if (!host) {
+        return null;
+    }
+    host.innerHTML = "";
+    const textarea = document.createElement("textarea");
+    textarea.id = "txt_content_comment_" + commentId;
+    textarea.name = "txt_content_comment_" + commentId;
+    textarea.className = "w-full min-h-[220px] rounded-lg border border-gray-300 p-3 text-sm";
+    textarea.setAttribute("rows", "8");
+    textarea.setAttribute("placeholder", "댓글을 입력해주세요.");
+    textarea.value = initialHTML || "";
+    host.appendChild(textarea);
+    return createArticleEditorFallback(textarea);
+}
+
+function getCommentStorageKey(commentId) {
+    const board = (typeof url === "undefined" || url == null || url === "" || url === "None") ? "free" : url;
+    const articleID = (typeof orderID === "undefined" || orderID == null || orderID === "" || orderID === "None") ? "new" : orderID;
+    return ["web-r", "community", board, "comment", articleID, commentId || "new"].join(":");
+}
+
+async function mountSolidCommentEditor(commentId, initialHTML = "", hostID = null) {
+    const key = commentId == null ? "new" : String(commentId);
+    const defaultHostID = key === "new" ? "div_community_read_comment_new_form" : "div_community_read_comment_new_" + key + "_form";
+    const host = document.getElementById(hostID || defaultHostID);
+    if (!host) {
+        return null;
+    }
+    const textareaID = "txt_content_comment_" + key;
+    const editorOptions = {
+        placeholder: "댓글을 입력해주세요.",
+        storageKey: getCommentStorageKey(key),
+        textareaID: textareaID,
+        textareaName: textareaID,
+        restoreDraft: !hostID,
+        ribbonExpanded: false,
+        minHeight: "220px",
+    };
+    if (typeof initialHTML === "string") {
+        editorOptions.html = initialHTML;
+    }
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.mountHost === "function") {
+        return await window.WebRSolidEditor.mountHost(host, editorOptions);
+    }
+    return createCommentEditorFallbackInHost(host, key, initialHTML || "");
+}
+
+function getCommentEditorHTML(currentEditor) {
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.getHTML === "function") {
+        return window.WebRSolidEditor.getHTML(currentEditor);
+    }
+    if (currentEditor && typeof currentEditor.__hostMirrorNow === "function") {
+        return currentEditor.__hostMirrorNow(true);
+    }
+    if (currentEditor && typeof currentEditor.getHTML === "function") {
+        return currentEditor.getHTML();
+    }
+    return "";
+}
+
+function setCommentEditorHTML(currentEditor, html) {
+    if (window.WebRSolidEditor && typeof window.WebRSolidEditor.setHTML === "function") {
+        if (window.WebRSolidEditor.setHTML(currentEditor, html)) {
+            return;
+        }
+    }
+    if (currentEditor && typeof currentEditor.setHTML === "function") {
+        currentEditor.setHTML(html || "");
+    }
+}
+
+function isCommentContentEmpty(html) {
+    return isArticleContentEmpty(html);
 }
 
 async function compressImage(blob, maxWidth = 1200, maxHeight = 1200, quality = 0.8, maxSizeKB = 500) {
@@ -753,7 +1175,8 @@ function Div_article_read_file() {
 
     const isRblogger = data.category_url === "rblogger";
     const hasUrl = !!data.url;
-    const hasFile = !!data.file_url;
+    const attachments = normalizeAttachmentList(data);
+    const hasFile = attachments.length > 0;
 
     if (data.is_secret === 1 && data.check_reader !== "admin" && data.check_reader !== "writer") {
         return null;
@@ -797,11 +1220,13 @@ function Div_article_read_file() {
 
                 <form class="mb-3"><div class="w-full bg-gray-50 rounded-lg border border-gray-200"></div></form>
 
-                <div class="flex flex-row justify-center items-start w-full">
-                    <a href={"/" + data.file_url} target="_blank"
-                       class="flex flex-row justify-end items-center text-md font-normal w-fit space-x-2 cursor-pointer hover:bg-gray-100">
-                        {data.file_name}
-                    </a>
+                <div class="flex flex-col justify-start items-start w-full gap-2">
+                    {attachments.map((file, index) => (
+                        <a key={"article_file_" + index} href={getFileHref(file.file_url || file.url_file)} target="_blank"
+                           class="flex flex-row justify-end items-center text-md font-normal w-fit space-x-2 cursor-pointer hover:bg-gray-100">
+                            {file.file_name || file.origin_file_name || file.file_url}
+                        </a>
+                    ))}
                 </div>
             </div>
         </section>
@@ -1005,21 +1430,8 @@ function Div_comment_form(props) {
 
             <div class="w-full" id={"div_comment_editor_footer_button_" + commentId}>
                 <div class="flex flex-col justify-between items-center w-full space-x-2 space-y-2">
-                    <div class="flex flex-row justify-start items-center w-full space-x-2">
-                        <input type="file" name={"id_file_upload_" + commentId} id={"id_file_upload_" + commentId}
-                               accept="*" class="hidden" onChange={() => comment_file_action("upload", commentId)} />
-
-                        <button type="button"
-                                class="flex flex-row justify-center items-center py-1.5 px-5 text-white bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
-                                onClick={() => document.getElementById("id_file_upload_" + commentId).click()}>
-                            <img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg" class="w-4 h-4 mr-2 md:mr-0" />
-                            <p class="block md:hidden">파일 첨부하기</p>
-                        </button>
-
-                        <p id={"txt_filename_" + commentId}></p>
-                        <p id={"txt_file_delete_" + commentId} class="hidden" onClick={() => comment_file_action("delete", commentId)}>
-                            <img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg" class="w-4 h-4" />
-                        </p>
+                    <div class="w-full" id={"div_comment_file_control_" + commentId}>
+                        <AttachmentDropZone target="comment" commentId={commentId} compact={true} />
                     </div>
 
                     <div class="flex flex-row justify-end items-center w-full space-x-2">
@@ -1063,16 +1475,7 @@ function Div_article_read_comment(props) {
             <Div_comment key={propsComment.data.rereply[key].uuid} data={propsComment.data.rereply[key]} depth={2} />
         ));
 
-        let fileHref = "";
-        if (propsComment.data.file_url) {
-            const raw = propsComment.data.file_url;
-            if (raw.startsWith("http://") || raw.startsWith("https://")) {
-                fileHref = raw;
-            } else {
-                const normalizedPath = raw.startsWith("/") ? raw : "/" + raw;
-                fileHref = window.location.protocol + "//" + window.location.host + normalizedPath;
-            }
-        }
+        const attachments = normalizeAttachmentList(propsComment.data);
 
         return (
             <article class={"px-6 py-3 " + (isDepth2 ? "ml-4 " : "") + "text-base " + bgColorClass + " rounded-xl w-full space-y-2"}>
@@ -1082,12 +1485,18 @@ function Div_article_read_comment(props) {
 
                 <div class="text-gray-500" id={"div_comment_" + propsComment.data.uuid}></div>
 
-                {propsComment.data.file_url != null && (
-                    <div class="flex flex-row justify-start items-center space-x-2 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-4 h-4 text-gray-600">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l5 5v12a2 2 0 01-2 2z" />
-                        </svg>
-                        <a href={fileHref} target="_blank" class="hover:underline">{propsComment.data.file_name}</a>
+                {attachments.length > 0 && (
+                    <div class="flex flex-col justify-start items-start gap-1 text-sm">
+                        {attachments.map((file, index) => (
+                            <div key={"comment_file_" + propsComment.data.uuid + "_" + index} class="flex flex-row justify-start items-center space-x-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-4 h-4 text-gray-600">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l5 5v12a2 2 0 01-2 2z" />
+                                </svg>
+                                <a href={getFileHref(file.file_url || file.url_file)} target="_blank" class="hover:underline">
+                                    {file.file_name || file.origin_file_name || file.file_url}
+                                </a>
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -1154,6 +1563,9 @@ async function click_btn_edit_comment(uuid_comment) {
         return (
             <div class="w-full">
                 <div class="w-full" id={"div_comment_editor_main_" + props.uuid_comment}></div>
+                <div class="w-full mt-2" id={"div_comment_edit_file_control_" + props.uuid_comment}>
+                    <AttachmentDropZone target="comment" commentId={props.uuid_comment} compact={true} />
+                </div>
                 <div class="flex flex-row justify-end items-center w-full space-x-2 mt-2">
                     <input id={"chk_secret_" + props.uuid_comment} type="checkbox" value=""
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-500 rounded focus:ring-blue-500 focus:ring-2" />
@@ -1168,19 +1580,12 @@ async function click_btn_edit_comment(uuid_comment) {
         );
     }
 
-    ReactDOM.render(<Div_comment_editor_form uuid_comment={uuid_comment} />, document.getElementById("div_comment_" + uuid_comment));
-
-    communityState.commentEditors[uuid_comment] = new toastui.Editor({
-        el: document.querySelector("#div_comment_editor_main_" + uuid_comment),
-        previewStyle: "vertical",
-        height: "250px",
-        initialEditType: "wysiwyg",
-        plugins: getEditorPlugins(),
-    });
-
     const target = Object.values(communityState.commentData || {}).find((item) => item.uuid === uuid_comment);
+    ReactDOM.render(<Div_comment_editor_form uuid_comment={uuid_comment} />, document.getElementById("div_comment_" + uuid_comment));
+    communityState.commentEditors[uuid_comment] = await mountSolidCommentEditor(uuid_comment, target ? target.content || "" : "", "div_comment_editor_main_" + uuid_comment);
+
     if (target) {
-        communityState.commentEditors[uuid_comment].setHTML(target.content);
+        setCommentEditorHTML(communityState.commentEditors[uuid_comment], target.content || "");
         const secretEl = document.getElementById("chk_secret_" + uuid_comment);
         if (secretEl) {
             secretEl.checked = target.is_secret == 1;
@@ -1224,12 +1629,12 @@ async function comment_action(action, uuid_comment) {
         return;
     }
 
-    const txt_content = currentEditor.getHTML();
+    const txt_content = getCommentEditorHTML(currentEditor);
     const chk_id = isNew ? "chk_secret_new" : "chk_secret_" + uuid_comment;
     const secretEl = document.getElementById(chk_id);
     const chk_secret = secretEl ? secretEl.checked : false;
 
-    if (txt_content == null || txt_content === "" || txt_content === "<p><br></p>") {
+    if (isCommentContentEmpty(txt_content)) {
         alert("내용을 입력해주세요.");
         return;
     }
@@ -1260,18 +1665,37 @@ async function comment_action(action, uuid_comment) {
     request_data.append("txt_content", txt_content);
     request_data.append("chk_secret", chk_secret);
 
-    if (action === "submit") {
-        const fileItem = (communityState.commentFiles || []).find((item) => item.uuid_comment === uuid_comment);
-        if (fileItem) {
-            request_data.append("attached_file", fileItem.uuid);
-        }
-    }
-
-    await fetch(requestUrl, {
+    const responseData = await fetch(requestUrl, {
         method: "POST",
         headers: { "X-CSRFToken": getCookie("csrftoken") },
         body: request_data,
-    });
+    }).then(res => res.json());
+
+    if (responseData && responseData.error) {
+        alert(responseData.error);
+        const btnElAfterError = document.getElementById(btnId);
+        if (btnElAfterError) {
+            ReactDOM.render(
+                <Div_btn_comment_editor_footer_button uuid_comment={uuid_comment} function={() => comment_action(action, uuid_comment)} />,
+                btnElAfterError
+            );
+        }
+        return;
+    }
+
+    const savedCommentUUID = responseData && responseData.uuid ? responseData.uuid : uuid_comment;
+    const queuedFiles = queuedCommentFiles(uuid_comment);
+    try {
+        await uploadQueuedFiles(queuedFiles, {
+            note: "Comment",
+            scope: "comment",
+            articleUUID: orderID,
+            commentUUID: savedCommentUUID,
+        });
+        clearQueuedCommentFiles(uuid_comment);
+    } catch (error) {
+        alert("댓글은 저장되었지만 파일 업로드에 실패했습니다: " + error.message);
+    }
 
     get_read_article_comment(orderID);
 
@@ -1286,19 +1710,7 @@ async function comment_action(action, uuid_comment) {
 
 async function comment_file_action(action, uuid_comment) {
     if (action === "delete") {
-        const idx = (communityState.commentFiles || []).findIndex((item) => item.uuid_comment === uuid_comment);
-        if (idx !== -1) {
-            communityState.commentFiles.splice(idx, 1);
-        }
-
-        const inputEl = document.getElementById("id_file_upload_" + uuid_comment);
-        if (inputEl) inputEl.value = "";
-
-        const nameEl = document.getElementById("txt_filename_" + uuid_comment);
-        if (nameEl) nameEl.innerHTML = "";
-
-        const delEl = document.getElementById("txt_file_delete_" + uuid_comment);
-        if (delEl) delEl.className = "hidden";
+        clearQueuedCommentFiles(uuid_comment);
         return;
     }
 
@@ -1308,32 +1720,8 @@ async function comment_file_action(action, uuid_comment) {
             return;
         }
 
-        const formData = new FormData();
-        formData.append("file_input", inputEl.files[0]);
-        formData.append("host", window.location.href.toString());
-        formData.append("note", "Comment");
-        formData.append("active", 1);
-
-        const filedata = await fetch("/blank/ajax_file_upload/", {
-            method: "POST",
-            headers: { "X-CSRFToken": getCookie("csrftoken") },
-            body: formData,
-        }).then(res => res.json());
-
-        filedata.uuid_comment = uuid_comment;
-
-        const existingIndex = (communityState.commentFiles || []).findIndex((item) => item.uuid_comment === uuid_comment);
-        if (existingIndex !== -1) {
-            communityState.commentFiles[existingIndex] = filedata;
-        } else {
-            communityState.commentFiles.push(filedata);
-        }
-
-        const nameEl = document.getElementById("txt_filename_" + uuid_comment);
-        if (nameEl) nameEl.innerHTML = filedata.origin_file_name;
-
-        const delEl = document.getElementById("txt_file_delete_" + uuid_comment);
-        if (delEl) delEl.className = COMMUNITY_COMMENT_FILE_DELETE_CLASS;
+        queueCommentFiles(uuid_comment, inputEl.files);
+        inputEl.value = "";
     }
 }
 
@@ -1347,10 +1735,10 @@ async function get_read_article_comment(orderID_param) {
         body: request_data,
     }).then(res => res.json());
 
-    set_comment();
+    await set_comment();
 }
 
-function set_comment() {
+async function set_comment() {
     if (!communityState.commentData) {
         const container = document.getElementById("div_community_read_comment");
         if (container) {
@@ -1395,36 +1783,20 @@ function set_comment() {
     });
 
     communityState.commentEditors = {};
-    const editorConfig = {
-        previewStyle: "vertical",
-        height: "250px",
-        initialEditType: "wysiwyg",
-        plugins: getEditorPlugins(),
-        hooks: {
-            addImageBlobHook: async (blob, callback) => {
-                try {
-                    const compressedBase64 = await compressImage(blob);
-                    callback(compressedBase64, blob.name);
-                } catch (error) {
-                    alert("이미지 처리에 실패했습니다. 다시 시도해 주세요.");
-                }
-            },
-        },
-    };
 
     const newFormEl = document.querySelector("#div_community_read_comment_new_form");
     if (newFormEl) {
-        communityState.commentEditors["new"] = new toastui.Editor({ el: newFormEl, ...editorConfig });
-        communityState.commentEditors["new"].setHTML("");
+        communityState.commentEditors["new"] = await mountSolidCommentEditor("new", "");
+        setCommentEditorHTML(communityState.commentEditors["new"], "");
     }
 
-    communityState.commentUpper.forEach((comment) => {
-        if (!comment || !comment.uuid) return;
+    for (const comment of communityState.commentUpper) {
+        if (!comment || !comment.uuid) continue;
         const replyEl = document.querySelector("#div_community_read_comment_new_" + comment.uuid + "_form");
-        if (!replyEl) return;
-        communityState.commentEditors[comment.uuid] = new toastui.Editor({ el: replyEl, ...editorConfig });
-        communityState.commentEditors[comment.uuid].setHTML("");
-    });
+        if (!replyEl) continue;
+        communityState.commentEditors[comment.uuid] = await mountSolidCommentEditor(comment.uuid, "");
+        setCommentEditorHTML(communityState.commentEditors[comment.uuid], "");
+    }
 }
 
 async function set_main_read() {
@@ -1450,18 +1822,10 @@ function Div_main() {
                 </div>
             </div>
 
-            <div id="div_editor" class="w-full"></div>
+            <div id="div_editor" class="webr-solid-editor-shell w-full"></div>
 
-            <div class="flex flex-row justify-start items-center space-x-4">
-                <button class="flex flex-row justify-center items-center py-1.5 px-5 text-white bg-blue-700 font-medium rounded-lg text-center text-sm w-fit md:w-auto hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
-                        onClick={() => document.getElementById("id_file_upload").click()}>
-                    <img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/file_upload.svg" class="w-4 h-4 mr-2" />
-                    파일 첨부하기
-                </button>
-                <p id="txt_filename"></p>
-                <p id="txt_file_delete" class="hidden" onClick={() => click_delete_file()}>
-                    <img src="https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/trash.svg" class="w-4 h-4" />
-                </p>
+            <div class="w-full" id="div_article_file_control">
+                <AttachmentDropZone target="article" existing={communityState.articleData ? normalizeAttachmentList(communityState.articleData) : []} />
             </div>
 
             <div class="w-full" id="div_button_list">
@@ -1512,59 +1876,17 @@ async function check_file_upload() {
     if (!inputEl || !inputEl.files || !inputEl.files[0]) {
         return;
     }
-
-    const formData = new FormData();
-    formData.append("file_input", inputEl.files[0]);
-    formData.append("host", window.location.href.toString());
-    formData.append("note", "Article");
-    formData.append("active", 1);
-
-    const filedata = await fetch("/blank/ajax_file_upload/", {
-        method: "POST",
-        headers: { "X-CSRFToken": getCookie("csrftoken") },
-        body: formData,
-    }).then(res => res.json());
-
-    communityState.articleFile = filedata;
-    const nameEl = document.getElementById("txt_filename");
-    if (nameEl) nameEl.innerHTML = filedata.origin_file_name;
-    const deleteEl = document.getElementById("txt_file_delete");
-    if (deleteEl) deleteEl.className = COMMUNITY_FILE_DELETE_CLASS;
+    queueArticleFiles(inputEl.files);
+    inputEl.value = "";
 }
 
 function click_delete_file() {
-    communityState.articleFile = null;
-    if (communityState.articleData) {
-        communityState.articleData.file_url = null;
-        communityState.articleData.file_name = null;
-    }
-
-    const inputEl = document.getElementById("id_file_upload");
-    if (inputEl) inputEl.value = "";
-    const nameEl = document.getElementById("txt_filename");
-    if (nameEl) nameEl.innerHTML = null;
-    const deleteEl = document.getElementById("txt_file_delete");
-    if (deleteEl) deleteEl.className = "hidden";
+    clearQueuedArticleFiles();
 }
 
-function mountArticleEditor() {
-    communityState.articleEditor = new toastui.Editor({
-        el: document.querySelector("#div_editor"),
-        previewStyle: "vertical",
-        height: "500px",
-        initialEditType: "wysiwyg",
-        plugins: getEditorPlugins(),
-        hooks: {
-            addImageBlobHook: async (blob, callback) => {
-                try {
-                    const compressedBase64 = await compressImage(blob, 1200, 1200, 0.8, 500);
-                    callback(compressedBase64, blob.name || "image");
-                } catch (error) {
-                    alert("이미지 처리에 실패했습니다. 다시 시도해 주세요.");
-                }
-            },
-        },
-    });
+async function mountArticleEditor(initialHTML = null) {
+    communityState.articleEditor = await mountSolidArticleEditor(initialHTML);
+    return communityState.articleEditor;
 }
 
 function Div_check_writer() {
@@ -1598,7 +1920,7 @@ function Div_main_stop() {
 
 async function submit_write() {
     const txt_title = document.getElementById("txt_title").value.trim();
-    const txt_content = communityState.articleEditor.getHTML();
+    const txt_content = getArticleEditorHTML();
     const chk_secret = document.getElementById("chk_secret").checked;
 
     if (communityState.toggle_click_submit) {
@@ -1610,7 +1932,7 @@ async function submit_write() {
 
     if (txt_title == null || txt_title === "") {
         alert("제목을 입력해주세요.");
-    } else if (txt_content == null || txt_content === "" || txt_content === "<p><br></p>") {
+    } else if (isArticleContentEmpty(txt_content)) {
         alert("내용을 입력해주세요.");
     } else {
         const request_data = new FormData();
@@ -1619,15 +1941,29 @@ async function submit_write() {
         request_data.append("txt_title", txt_title);
         request_data.append("txt_content", txt_content);
         request_data.append("chk_secret", chk_secret);
-        if (communityState.articleFile != null) {
-            request_data.append("attached_file", communityState.articleFile.uuid);
-        }
 
         const data = await fetch("/blank/ajax_board/insert_article/", {
             method: "POST",
             headers: { "X-CSRFToken": getCookie("csrftoken") },
             body: request_data,
         }).then(res => res.json());
+
+        if (data && data.error) {
+            alert(data.error);
+            communityState.toggle_click_submit = false;
+            ReactDOM.render(<Div_button />, document.getElementById("div_button_list"));
+            return;
+        }
+
+        try {
+            await uploadQueuedFiles(queuedArticleFiles(), {
+                note: "Article",
+                scope: "article",
+                articleUUID: data.uuid,
+            });
+        } catch (error) {
+            alert("게시글은 저장되었지만 파일 업로드에 실패했습니다: " + error.message);
+        }
 
         location.href = init_url + "read/" + data.uuid + "/";
     }
@@ -1638,7 +1974,7 @@ async function submit_write() {
 
 async function submit_edit() {
     const txt_title = document.getElementById("txt_title").value.trim();
-    const txt_content = communityState.articleEditor.getHTML();
+    const txt_content = getArticleEditorHTML();
     const chk_secret = document.getElementById("chk_secret").checked;
 
     if (communityState.toggle_click_submit) {
@@ -1650,7 +1986,7 @@ async function submit_edit() {
 
     if (txt_title == null || txt_title === "") {
         alert("제목을 입력해주세요.");
-    } else if (txt_content == null || txt_content === "" || txt_content === "<p><br></p>") {
+    } else if (isArticleContentEmpty(txt_content)) {
         alert("내용을 입력해주세요.");
     } else {
         const request_data = new FormData();
@@ -1661,9 +1997,7 @@ async function submit_edit() {
         request_data.append("txt_content", txt_content);
         request_data.append("chk_secret", chk_secret);
 
-        if (communityState.articleFile != null) {
-            request_data.append("attached_file", communityState.articleFile.file_name);
-        } else if (communityState.articleData && communityState.articleData.file_url != null) {
+        if (communityState.articleData && communityState.articleData.file_url != null) {
             request_data.append("attached_file", communityState.articleData.file_url);
         }
 
@@ -1672,6 +2006,23 @@ async function submit_edit() {
             headers: { "X-CSRFToken": getCookie("csrftoken") },
             body: request_data,
         }).then(res => res.json());
+
+        if (response_data && response_data.error) {
+            alert(response_data.error);
+            communityState.toggle_click_submit = false;
+            ReactDOM.render(<Div_button />, document.getElementById("div_button_list"));
+            return;
+        }
+
+        try {
+            await uploadQueuedFiles(queuedArticleFiles(), {
+                note: "Article",
+                scope: "article",
+                articleUUID: response_data.uuid || orderID,
+            });
+        } catch (error) {
+            alert("게시글은 저장되었지만 파일 업로드에 실패했습니다: " + error.message);
+        }
 
         location.href = init_url + "read/" + response_data.uuid + "/";
     }
@@ -1691,7 +2042,7 @@ async function set_main_write() {
     resetEditorState();
     if (gv_username !== "") {
         ReactDOM.render(<Div_main />, document.getElementById("div_main"));
-        mountArticleEditor();
+        await mountArticleEditor();
     } else {
         location.href = init_url;
     }
@@ -1722,16 +2073,11 @@ async function set_main_edit() {
     }
 
     ReactDOM.render(<Div_main />, document.getElementById("div_main"));
-    mountArticleEditor();
-
     document.getElementById("txt_title").value = communityState.articleData.title;
-    communityState.articleEditor.setHTML(communityState.articleData.content);
+    await mountArticleEditor(communityState.articleData.content || "");
+    setArticleEditorHTML(communityState.articleData.content);
     document.getElementById("chk_secret").checked = communityState.articleData.is_secret == 1;
-
-    if (communityState.articleData.file_name) {
-        document.getElementById("txt_filename").innerHTML = communityState.articleData.file_name;
-        document.getElementById("txt_file_delete").className = COMMUNITY_FILE_DELETE_CLASS;
-    }
+    renderArticleAttachmentControl();
 }
 
 async function set_main() {
