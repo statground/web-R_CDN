@@ -173,7 +173,7 @@ function Notebook() {
         const link = document.createElement("link");
         link.id = id;
         link.rel = "stylesheet";
-        link.href = "https://cdn.jsdelivr.net/npm/codemirror.65.16/theme/material-darker.css";
+        link.href = "https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.css";
         document.head.appendChild(link);
       }
     } catch (e) {
