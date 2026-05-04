@@ -728,11 +728,7 @@ const IntroNoticeRead = /* @__PURE__ */ (() => {
     ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_header, { data: data_article }), document.getElementById("div_community_read_header"));
     ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_buttons, { data: data_article }), document.getElementById("div_article_read_buttons"));
     ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_file, { data: data_article }), document.getElementById("div_community_read_file"));
-    const viewer = toastui.Editor.factory({
-      el: document.querySelector("#div_community_read_content"),
-      viewer: true,
-      initialValue: data_article.content
-    });
+    const viewer = WebRSolidEdit.renderContent(document.querySelector("#div_community_read_content"), data_article.content);
   }
   function Div_btn_comment_editor_footer_button(props) {
     return /* @__PURE__ */ React.createElement(
@@ -1292,11 +1288,7 @@ const IntroNoticeRead = /* @__PURE__ */ (() => {
       if (!el) {
         return;
       }
-      new toastui.Editor.factory({
-        el,
-        viewer: true,
-        initialValue: comment.content || ""
-      });
+      WebRSolidEdit.renderContent(el, comment.content || "");
     });
     const newFormEl = document.querySelector("#div_community_read_comment_new_form");
     if (newFormEl) {

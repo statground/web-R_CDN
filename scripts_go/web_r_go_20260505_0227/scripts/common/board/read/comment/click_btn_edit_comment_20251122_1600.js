@@ -40,17 +40,9 @@ async function click_btn_edit_comment(uuid_comment) {
     /* @__PURE__ */ React.createElement(Div_comment_editor_form, { uuid_comment }),
     document.getElementById("div_comment_" + uuid_comment)
   );
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-  editor[uuid_comment] = new toastui.Editor({
-    el: document.querySelector(
+editor[uuid_comment] = WebRSolidEdit.mountEditor(document.querySelector(
       "#div_comment_editor_main_" + uuid_comment
-    ),
-    previewStyle: "vertical",
-    height: "250px",
-    initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell]
-  });
+    ), { height: "250px", placeholder: "내용을 입력해주세요." });
   const target = Object.values(data_comment).find(
     (item) => item.uuid === uuid_comment
   );

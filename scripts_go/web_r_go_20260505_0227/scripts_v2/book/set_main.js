@@ -528,16 +528,7 @@
       return;
     }
     ReactDOM.render(/* @__PURE__ */ React.createElement(Form, null), root);
-    const { Editor } = toastui;
-    const { colorSyntax } = Editor.plugin;
-    const { tableMergedCell } = Editor.plugin;
-    editor = new toastui.Editor({
-      el: document.querySelector("#div_editor"),
-      previewStyle: "vertical",
-      height: "500px",
-      initialEditType: "wysiwyg",
-      plugins: [colorSyntax, tableMergedCell]
-    });
+editor = WebRSolidEdit.mountEditor(document.querySelector("#div_editor"), { height: "500px", placeholder: "내용을 입력해주세요." });
     await loadBookOptions();
   };
 })();
@@ -649,16 +640,7 @@
       return;
     }
     ReactDOM.render(/* @__PURE__ */ React.createElement(Form, null), root);
-    const { Editor } = toastui;
-    const { colorSyntax } = Editor.plugin;
-    const { tableMergedCell } = Editor.plugin;
-    editor = new toastui.Editor({
-      el: document.querySelector("#div_editor"),
-      previewStyle: "vertical",
-      height: "500px",
-      initialEditType: "wysiwyg",
-      plugins: [colorSyntax, tableMergedCell]
-    });
+editor = WebRSolidEdit.mountEditor(document.querySelector("#div_editor"), { height: "500px", placeholder: "내용을 입력해주세요." });
     document.getElementById("txt_title").value = ((_b = articleData == null ? void 0 : articleData.article) == null ? void 0 : _b.title) || "";
     editor.setHTML(((_c = articleData == null ? void 0 : articleData.article) == null ? void 0 : _c.content) || "");
     if (((_d = articleData == null ? void 0 : articleData.article) == null ? void 0 : _d.is_secret) === 1) {

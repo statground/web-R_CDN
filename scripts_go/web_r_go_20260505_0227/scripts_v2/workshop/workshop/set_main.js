@@ -523,12 +523,8 @@ function render_article() {
   if (fileTarget) {
     ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_file, { data: data_article }), fileTarget);
   }
-  if (contentTarget && typeof toastui !== "undefined" && toastui.Editor) {
-    toastui.Editor.factory({
-      el: contentTarget,
-      viewer: true,
-      initialValue: data_article.content || ""
-    });
+  if (contentTarget && window.WebRSolidEdit) {
+    WebRSolidEdit.renderContent(contentTarget, data_article.content || "");
   }
 }
 async function get_read_article(mode_value) {
@@ -569,28 +565,21 @@ function set_comment() {
     ),
     commentContainer
   );
-  if (typeof toastui === "undefined" || !toastui.Editor) {
+  if (!window.WebRSolidEdit) {
     return;
   }
   allComments.forEach((comment) => {
     const viewerTarget = document.querySelector("#div_comment_" + comment.uuid);
     if (!viewerTarget)
       return;
-    toastui.Editor.factory({
-      el: viewerTarget,
-      viewer: true,
-      initialValue: comment.content || ""
-    });
+    WebRSolidEdit.renderContent(viewerTarget, comment.content || "");
   });
   commentEditors = {};
   commentFiles = Array.isArray(commentFiles) ? commentFiles : [];
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-  const editorConfig = {
+const editorConfig = {
     previewStyle: "vertical",
     height: "250px",
     initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell],
     hooks: {
       addImageBlobHook: async (blob, callback) => {
         try {
@@ -604,20 +593,14 @@ function set_comment() {
   };
   const newFormEl = document.querySelector("#div_community_read_comment_new_form");
   if (newFormEl && getCurrentUsername() !== "") {
-    commentEditors["new"] = new toastui.Editor({
-      el: newFormEl,
-      ...editorConfig
-    });
+    commentEditors["new"] = WebRSolidEdit.mountEditor(newFormEl, { height: "250px", placeholder: "내용을 입력해주세요." });
     commentEditors["new"].setHTML("");
   }
   data_comment_upper.forEach((comment) => {
     const replyEl = document.querySelector("#div_community_read_comment_new_" + comment.uuid + "_form");
     if (!replyEl)
       return;
-    commentEditors[comment.uuid] = new toastui.Editor({
-      el: replyEl,
-      ...editorConfig
-    });
+    commentEditors[comment.uuid] = WebRSolidEdit.mountEditor(replyEl, { height: "250px", placeholder: "내용을 입력해주세요." });
     commentEditors[comment.uuid].setHTML("");
   });
 }
@@ -639,19 +622,11 @@ async function click_btn_edit_comment(uuid_comment) {
   }
   const targetComment = Object.values(data_comment || {}).find((item) => item.uuid === uuid_comment);
   const targetEl = document.getElementById("div_comment_" + uuid_comment);
-  if (!targetComment || !targetEl || typeof toastui === "undefined" || !toastui.Editor) {
+  if (!targetComment || !targetEl || !window.WebRSolidEdit) {
     return;
   }
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_comment_editor_form, { uuid_comment }), targetEl);
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-  commentEditors[uuid_comment] = new toastui.Editor({
-    el: document.querySelector("#div_comment_editor_main_" + uuid_comment),
-    previewStyle: "vertical",
-    height: "250px",
-    initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell]
-  });
+commentEditors[uuid_comment] = WebRSolidEdit.mountEditor(document.querySelector("#div_comment_editor_main_" + uuid_comment), { height: "250px", placeholder: "내용을 입력해주세요." });
   commentEditors[uuid_comment].setHTML(targetComment.content || "");
   const secretEl = document.getElementById("chk_secret_" + uuid_comment);
   if (secretEl) {
@@ -829,28 +804,10 @@ function click_delete_file() {
     deleteEl.className = "hidden";
 }
 function initArticleEditor(initialHTML) {
-  if (typeof toastui === "undefined" || !toastui.Editor) {
+  if (!window.WebRSolidEdit) {
     return;
   }
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-  articleEditor = new toastui.Editor({
-    el: document.querySelector("#div_editor"),
-    previewStyle: "vertical",
-    height: "500px",
-    initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell],
-    hooks: {
-      addImageBlobHook: async (blob, callback) => {
-        try {
-          const compressedBase64 = await compressImage(blob);
-          callback(compressedBase64, blob.name);
-        } catch (error) {
-          alert("\uC774\uBBF8\uC9C0 \uCC98\uB9AC\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4. \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.");
-        }
-      }
-    }
-  });
+articleEditor = WebRSolidEdit.mountEditor(document.querySelector("#div_editor"), { height: "500px", placeholder: "내용을 입력해주세요." });
   articleEditor.setHTML(initialHTML || "");
 }
 async function click_btn_submit() {

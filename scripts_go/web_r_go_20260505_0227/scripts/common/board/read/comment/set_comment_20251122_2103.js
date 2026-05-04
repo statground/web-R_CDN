@@ -53,19 +53,12 @@ function set_comment() {
     if (!el) {
       return;
     }
-    new toastui.Editor.factory({
-      el,
-      viewer: true,
-      initialValue: comment.content || ""
-    });
+    WebRSolidEdit.renderContent(el, comment.content || "");
   });
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-  const editorConfig = {
+const editorConfig = {
     previewStyle: "vertical",
     height: "250px",
     initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell],
     hooks: {
       addImageBlobHook: async (blob, callback) => {
         try {
@@ -83,10 +76,7 @@ function set_comment() {
   const editor = window.editor;
   const newFormEl = document.querySelector("#div_community_read_comment_new_form");
   if (newFormEl) {
-    editor["new"] = new toastui.Editor({
-      el: newFormEl,
-      ...editorConfig
-    });
+    editor["new"] = WebRSolidEdit.mountEditor(newFormEl, { height: "250px", placeholder: "내용을 입력해주세요." });
     editor["new"].setHTML();
   } else {
     console.warn("[set_comment] #div_community_read_comment_new_form not found");
@@ -100,10 +90,7 @@ function set_comment() {
     if (!replyEl) {
       return;
     }
-    editor[comment.uuid] = new toastui.Editor({
-      el: replyEl,
-      ...editorConfig
-    });
+    editor[comment.uuid] = WebRSolidEdit.mountEditor(replyEl, { height: "250px", placeholder: "내용을 입력해주세요." });
     editor[comment.uuid].setHTML();
   });
 }

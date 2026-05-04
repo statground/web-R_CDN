@@ -14,19 +14,12 @@ function set_comment() {
     }
   ), document.getElementById("div_community_read_comment"));
   Object.values(data_comment).forEach((comment) => {
-    new toastui.Editor.factory({
-      el: document.querySelector("#div_comment_" + comment.uuid),
-      viewer: true,
-      initialValue: comment.content
-    });
+    WebRSolidEdit.renderContent(document.querySelector("#div_comment_" + comment.uuid), comment.content);
   });
-  const { Editor } = toastui;
-  const { colorSyntax, tableMergedCell } = Editor.plugin;
-  const editorConfig = {
+const editorConfig = {
     previewStyle: "vertical",
     height: "250px",
     initialEditType: "wysiwyg",
-    plugins: [colorSyntax, tableMergedCell],
     hooks: {
       addImageBlobHook: async (blob, callback) => {
         try {
@@ -38,16 +31,10 @@ function set_comment() {
       }
     }
   };
-  editor["new"] = new toastui.Editor({
-    el: document.querySelector("#div_community_read_comment_new_form"),
-    ...editorConfig
-  });
+  editor["new"] = WebRSolidEdit.mountEditor(document.querySelector("#div_community_read_comment_new_form"), { height: "250px", placeholder: "내용을 입력해주세요." });
   editor["new"].setHTML();
   data_comment_upper.forEach((comment) => {
-    editor[comment.uuid] = new toastui.Editor({
-      el: document.querySelector("#div_community_read_comment_new_" + comment.uuid + "_form"),
-      ...editorConfig
-    });
+    editor[comment.uuid] = WebRSolidEdit.mountEditor(document.querySelector("#div_community_read_comment_new_" + comment.uuid + "_form"), { height: "250px", placeholder: "내용을 입력해주세요." });
     editor[comment.uuid].setHTML();
   });
 }

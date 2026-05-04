@@ -95,20 +95,7 @@ function resetEditorState() {
   communityState.commentUpper = [];
 }
 function getEditorPlugins() {
-  const plugins = [];
-  try {
-    if (toastui && toastui.Editor && toastui.Editor.plugin && toastui.Editor.plugin.colorSyntax) {
-      plugins.push(toastui.Editor.plugin.colorSyntax);
-    }
-  } catch (e) {
-  }
-  try {
-    if (toastui && toastui.Editor && toastui.Editor.plugin && toastui.Editor.plugin.tableMergedCell) {
-      plugins.push(toastui.Editor.plugin.tableMergedCell);
-    }
-  } catch (e) {
-  }
-  return plugins;
+  return [];
 }
 function createArticleEditorFallback(textarea) {
   return {
@@ -897,11 +884,7 @@ function set_article() {
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_header, { data: communityState.articleData }), document.getElementById("div_community_read_header"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_buttons, { data: communityState.articleData }), document.getElementById("div_article_read_buttons"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_file, null), document.getElementById("div_community_read_file"));
-  toastui.Editor.factory({
-    el: document.querySelector("#div_community_read_content"),
-    viewer: true,
-    initialValue: communityState.articleData.content
-  });
+  WebRSolidEdit.renderContent(document.querySelector("#div_community_read_content"), communityState.articleData.content);
 }
 async function get_read_article(loadMode) {
   const request_data = new FormData();
@@ -1229,7 +1212,7 @@ async function set_comment() {
     const el = document.querySelector("#div_comment_" + comment.uuid);
     if (!el)
       return;
-    toastui.Editor.factory({ el, viewer: true, initialValue: comment.content || "" });
+    WebRSolidEdit.renderContent(el, comment.content || "");
   });
   communityState.commentEditors = {};
   const newFormEl = document.querySelector("#div_community_read_comment_new_form");
