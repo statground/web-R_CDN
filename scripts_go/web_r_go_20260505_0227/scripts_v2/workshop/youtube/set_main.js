@@ -16,6 +16,7 @@ let toggle_click_submit = false;
 let youtubeListCanWrite = false;
 let youtubeSearchQuery = "";
 let youtubeLoadedItems = [];
+let youtubeSpotlightKey = "";
 const PAGE_SIZE = 20;
 const class_txt_file_delete = "rounded-lg hover:bg-red-100 cursor-pointer";
 const ENDPOINTS = {
@@ -214,6 +215,20 @@ function arrangeYoutubeItems(items) {
   });
   return out;
 }
+function youtubeItemKey(item) {
+  return youtubeVideoID(item && item.youtube_url) || item && item.uuid || "";
+}
+function randomSpotlightItem(items) {
+  const candidates = (items || []).slice(0, 12);
+  if (!candidates.length)
+    return null;
+  const current = candidates.find((item) => youtubeItemKey(item) === youtubeSpotlightKey);
+  if (current)
+    return current;
+  const item = candidates[Math.floor(Math.random() * candidates.length)] || candidates[0];
+  youtubeSpotlightKey = youtubeItemKey(item);
+  return item;
+}
 function videoMetaText(item) {
   const pieces = [];
   if (displayDate(item.youtube_publish_date || item.created_at))
@@ -408,10 +423,13 @@ function YoutubeRail(props) {
 }
 function YoutubeCatalog(props) {
   const items = arrangeYoutubeItems(props.items || []);
+  const spotlight = randomSpotlightItem(items);
+  const spotlightKey = youtubeItemKey(spotlight);
+  const gridItems = spotlightKey ? items.filter((item) => youtubeItemKey(item) !== spotlightKey) : items;
   if (!items.length) {
     return /* @__PURE__ */ React.createElement("div", { class: "flex min-h-[320px] w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center" }, /* @__PURE__ */ React.createElement("p", { class: "text-lg font-extrabold text-gray-900" }, "\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("p", { class: "mt-2 text-sm text-gray-500" }, "\uB2E4\uB978 \uAC80\uC0C9\uC5B4\uB85C \uB2E4\uC2DC \uD655\uC778\uD574 \uC8FC\uC138\uC694."));
   }
-  return /* @__PURE__ */ React.createElement("div", { class: "w-full space-y-8" }, /* @__PURE__ */ React.createElement("section", { class: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex items-end justify-between gap-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-xl font-extrabold text-gray-900" }, "\uCD94\uCC9C \uC601\uC0C1"), /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-gray-500" }, numberWithCommas(items.length) + "\uAC1C \uD45C\uC2DC \uC911")), /* @__PURE__ */ React.createElement("div", { class: "grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" }, items.map((item, idx) => /* @__PURE__ */ React.createElement(YoutubeVideoCard, { key: (item.uuid || "youtube") + "_grid_" + idx, data: item }))), /* @__PURE__ */ React.createElement("div", { id: props.placeholderId, class: "h-1 w-full" })));
+  return /* @__PURE__ */ React.createElement("div", { class: "w-full space-y-8" }, spotlight ? /* @__PURE__ */ React.createElement(YoutubeOfficialSpotlight, { item: spotlight, totalCount: props.totalCount }) : null, /* @__PURE__ */ React.createElement("section", { class: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex items-end justify-between gap-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-xl font-extrabold text-gray-900" }, "\uCD94\uCC9C \uC601\uC0C1"), /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-gray-500" }, numberWithCommas(items.length) + "\uAC1C \uD45C\uC2DC \uC911")), /* @__PURE__ */ React.createElement("div", { class: "grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" }, gridItems.map((item, idx) => /* @__PURE__ */ React.createElement(YoutubeVideoCard, { key: (item.uuid || "youtube") + "_grid_" + idx, data: item }))), /* @__PURE__ */ React.createElement("div", { id: props.placeholderId, class: "h-1 w-full" })));
 }
 function Div_article_read_header(props) {
   const item = props.data || {};
@@ -668,6 +686,7 @@ async function get_article_list_youtube(mode_value) {
   if (mode_value === "init") {
     page_num = 1;
     youtubeLoadedItems = [];
+    youtubeSpotlightKey = "";
     ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_list_skeleton, null), document.getElementById("div_article_list"));
   } else {
     page_num += 1;
@@ -1064,6 +1083,7 @@ async function renderWorkshopListPage() {
   toggle_page = false;
   youtubeSearchQuery = "";
   youtubeLoadedItems = [];
+  youtubeSpotlightKey = "";
   const menuData = await fetch(ENDPOINTS.menuHeader).then((res) => res.json()).catch(() => ({ username: getCurrentUsername(), role: typeof gv_role === "string" ? gv_role : "" }));
   const normalizedRole = typeof menuData.role === "string" ? menuData.role.trim().toLowerCase() : "";
   youtubeListCanWrite = !!menuData.username && (normalizedRole === "admin" || normalizedRole === "\uAD00\uB9AC\uC790");

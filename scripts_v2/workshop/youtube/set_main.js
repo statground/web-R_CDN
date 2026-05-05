@@ -18,6 +18,7 @@ let toggle_click_submit = false;
 let youtubeListCanWrite = false;
 let youtubeSearchQuery = "";
 let youtubeLoadedItems = [];
+let youtubeSpotlightKey = "";
 
 const PAGE_SIZE = 20;
 const class_txt_file_delete = "rounded-lg hover:bg-red-100 cursor-pointer";
@@ -239,6 +240,22 @@ function arrangeYoutubeItems(items) {
     });
 
     return out;
+}
+
+function youtubeItemKey(item) {
+    return youtubeVideoID(item && item.youtube_url) || (item && item.uuid) || "";
+}
+
+function randomSpotlightItem(items) {
+    const candidates = (items || []).slice(0, 12);
+    if (!candidates.length) return null;
+
+    const current = candidates.find((item) => youtubeItemKey(item) === youtubeSpotlightKey);
+    if (current) return current;
+
+    const item = candidates[Math.floor(Math.random() * candidates.length)] || candidates[0];
+    youtubeSpotlightKey = youtubeItemKey(item);
+    return item;
 }
 
 function videoMetaText(item) {
@@ -691,6 +708,9 @@ function YoutubeRail(props) {
 
 function YoutubeCatalog(props) {
     const items = arrangeYoutubeItems(props.items || []);
+    const spotlight = randomSpotlightItem(items);
+    const spotlightKey = youtubeItemKey(spotlight);
+    const gridItems = spotlightKey ? items.filter((item) => youtubeItemKey(item) !== spotlightKey) : items;
 
     if (!items.length) {
         return (
@@ -703,13 +723,14 @@ function YoutubeCatalog(props) {
 
     return (
         <div class="w-full space-y-8">
+            {spotlight ? <YoutubeOfficialSpotlight item={spotlight} totalCount={props.totalCount} /> : null}
             <section class="space-y-4">
                 <div class="flex items-end justify-between gap-4">
                     <h2 class="text-xl font-extrabold text-gray-900">추천 영상</h2>
                     <span class="text-xs font-semibold text-gray-500">{numberWithCommas(items.length)}개 표시 중</span>
                 </div>
                 <div class="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                    {items.map((item, idx) => (
+                    {gridItems.map((item, idx) => (
                         <YoutubeVideoCard key={(item.uuid || "youtube") + "_grid_" + idx} data={item} />
                     ))}
                 </div>
@@ -1391,6 +1412,7 @@ async function get_article_list_youtube(mode_value) {
     if (mode_value === "init") {
         page_num = 1;
         youtubeLoadedItems = [];
+        youtubeSpotlightKey = "";
         ReactDOM.render(<Div_article_list_skeleton />, document.getElementById("div_article_list"));
     } else {
         page_num += 1;
@@ -1915,6 +1937,7 @@ async function renderWorkshopListPage() {
     toggle_page = false;
     youtubeSearchQuery = "";
     youtubeLoadedItems = [];
+    youtubeSpotlightKey = "";
 
     const menuData = await fetch(ENDPOINTS.menuHeader).then((res) => res.json()).catch(() => ({ username: getCurrentUsername(), role: typeof gv_role === "string" ? gv_role : "" }));
     const normalizedRole = typeof menuData.role === "string" ? menuData.role.trim().toLowerCase() : "";
