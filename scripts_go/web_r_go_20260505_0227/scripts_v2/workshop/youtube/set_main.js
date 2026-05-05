@@ -112,14 +112,107 @@ function youtubeThumb(item) {
 function youtubeHref(item) {
   return init_url + "read/" + item.uuid + "/";
 }
+function youtubeVideoID(rawURL) {
+  const raw = String(rawURL || "").trim();
+  if (!raw)
+    return "";
+  try {
+    const parsed = new URL(raw);
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.replace("/", "").split("/")[0];
+    }
+    if (parsed.pathname.includes("/embed/")) {
+      return parsed.pathname.split("/embed/")[1].split("/")[0];
+    }
+    if (parsed.pathname.includes("/shorts/")) {
+      return parsed.pathname.split("/shorts/")[1].split("/")[0];
+    }
+    return parsed.searchParams.get("v") || "";
+  } catch (error) {
+    const match = raw.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/);
+    return match ? match[1] : "";
+  }
+}
+function youtubeFallbackThumb(item) {
+  const videoID = youtubeVideoID(item && item.youtube_url);
+  return videoID ? "https://i.ytimg.com/vi/" + videoID + "/hqdefault.jpg" : "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg";
+}
+function onYoutubeThumbError(event, item) {
+  const fallback = youtubeFallbackThumb(item);
+  if (event.currentTarget.dataset.fallbackApplied === "1" || event.currentTarget.src === fallback) {
+    const card = event.currentTarget.closest("[data-youtube-card]");
+    if (card)
+      card.classList.add("hidden");
+    return;
+  }
+  event.currentTarget.dataset.fallbackApplied = "1";
+  event.currentTarget.src = fallback;
+}
+function onYoutubeThumbLoad(event) {
+  if (event.currentTarget.naturalWidth <= 120 && event.currentTarget.naturalHeight <= 90) {
+    const card = event.currentTarget.closest("[data-youtube-card]");
+    if (card)
+      card.classList.add("hidden");
+  }
+}
+function youtubeEmbedUrl(rawURL) {
+  const videoID = youtubeVideoID(rawURL);
+  return videoID ? "https://www.youtube.com/embed/" + videoID + "?rel=0&modestbranding=1" : "";
+}
+function isRenderableYoutubeItem(item) {
+  return !!(item && item.uuid && item.youtube_url && item.title);
+}
 function isOfficialYoutube(item) {
   return item && (item.source === "article" || Number(item.sort_priority || 0) > 0);
 }
-function officialItems(items) {
-  return (items || []).filter(isOfficialYoutube);
+function dedupeYoutubeItems(items) {
+  const out = [];
+  const indexByKey = {};
+  (items || []).filter(isRenderableYoutubeItem).forEach((item) => {
+    const key = youtubeVideoID(item.youtube_url) || item.uuid;
+    if (!key)
+      return;
+    const previousIndex = indexByKey[key];
+    if (previousIndex == null) {
+      indexByKey[key] = out.length;
+      out.push(item);
+      return;
+    }
+    const previous = out[previousIndex];
+    const shouldReplace = isOfficialYoutube(item) && !isOfficialYoutube(previous) || isOfficialYoutube(item) === isOfficialYoutube(previous) && Number(item.youtube_views || 0) > Number(previous.youtube_views || 0);
+    if (shouldReplace) {
+      out[previousIndex] = item;
+    }
+  });
+  return out;
 }
-function ecosystemItems(items) {
-  return (items || []).filter((item) => !isOfficialYoutube(item));
+function arrangeYoutubeItems(items) {
+  const base = dedupeYoutubeItems(items);
+  const byLatest = [...base].sort((a, b) => String(b.youtube_publish_date || b.created_at || "").localeCompare(String(a.youtube_publish_date || a.created_at || "")));
+  const byViews = [...base].sort((a, b) => Number(b.youtube_views || 0) - Number(a.youtube_views || 0));
+  const byOfficial = [...base].filter(isOfficialYoutube).sort((a, b) => String(b.youtube_publish_date || b.created_at || "").localeCompare(String(a.youtube_publish_date || a.created_at || "")));
+  const byLowViews = [...base].filter((item) => Number(item.youtube_views || 0) > 0).sort((a, b) => Number(a.youtube_views || 0) - Number(b.youtube_views || 0));
+  const lanes = [byLatest, byViews, byOfficial, byLowViews];
+  const seen = {};
+  const out = [];
+  for (let i = 0; out.length < base.length && i < base.length * lanes.length; i += 1) {
+    lanes.forEach((lane) => {
+      const candidate = lane.shift();
+      if (!candidate)
+        return;
+      const key = youtubeVideoID(candidate.youtube_url) || candidate.uuid;
+      if (seen[key])
+        return;
+      seen[key] = true;
+      out.push(candidate);
+    });
+  }
+  base.forEach((item) => {
+    const key = youtubeVideoID(item.youtube_url) || item.uuid;
+    if (!seen[key])
+      out.push(item);
+  });
+  return out;
 }
 function videoMetaText(item) {
   const pieces = [];
@@ -132,10 +225,18 @@ function videoMetaText(item) {
 function categoryLabel(item) {
   if (isOfficialYoutube(item))
     return "Web-R \uACF5\uC2DD";
-  const raw = item.category_url_sub || item.category || "";
-  if (!raw || raw === "search_result")
-    return "R \uC0DD\uD0DC\uACC4";
-  return String(raw).replace(/_/g, " ");
+  return "";
+}
+function plainTextFromHTML(value) {
+  const div = document.createElement("div");
+  div.innerHTML = value || "";
+  return (div.textContent || div.innerText || "").replace(/\s+/g, " ").trim();
+}
+function articleSummary(item) {
+  const text = plainTextFromHTML(item && item.content);
+  if (!text)
+    return "Web-R \uC6CC\uD06C\uC0F5\uC5D0\uC11C \uC81C\uACF5\uD558\uB294 YouTube \uC601\uC0C1\uC785\uB2C8\uB2E4.";
+  return text.length > 170 ? text.slice(0, 170) + "..." : text;
 }
 async function _compressImageOnce(blob, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -251,7 +352,7 @@ function Div_sidelist_skeleton(props) {
   return /* @__PURE__ */ React.createElement("div", { id: props.id, class: "w-full" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-2 border border-gray-200 p-4 rounded-xl" }, /* @__PURE__ */ React.createElement(Div_box_header, { title: props.title }), /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-2 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { class: "h-2.5 bg-gray-200 rounded-full w-full" }), /* @__PURE__ */ React.createElement("div", { class: "h-2.5 bg-gray-200 rounded-full w-full" }), /* @__PURE__ */ React.createElement("div", { class: "h-2.5 bg-gray-200 rounded-full w-full" }))));
 }
 function Div_article_list_skeleton() {
-  return /* @__PURE__ */ React.createElement("div", { class: "w-full space-y-8 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { class: "overflow-hidden rounded-lg bg-gray-900" }, /* @__PURE__ */ React.createElement("div", { class: "grid gap-6 p-6 lg:grid-cols-2 lg:p-10" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "h-4 w-32 rounded-full bg-white/20" }), /* @__PURE__ */ React.createElement("div", { class: "h-10 w-4/5 rounded bg-white/20" }), /* @__PURE__ */ React.createElement("div", { class: "h-4 w-2/3 rounded bg-white/10" }), /* @__PURE__ */ React.createElement("div", { class: "h-10 w-32 rounded-lg bg-white/20" })), /* @__PURE__ */ React.createElement("div", { class: "aspect-video rounded-lg bg-white/10" }))), /* @__PURE__ */ React.createElement("div", { class: "grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" }, [0, 1, 2, 3, 4].map((idx) => /* @__PURE__ */ React.createElement("div", { key: idx, class: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { class: "aspect-video rounded-lg bg-gray-200" }), /* @__PURE__ */ React.createElement("div", { class: "h-4 rounded bg-gray-200" }), /* @__PURE__ */ React.createElement("div", { class: "h-3 w-2/3 rounded bg-gray-100" })))));
+  return /* @__PURE__ */ React.createElement("div", { class: "w-full space-y-8 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { class: "overflow-hidden rounded-lg border border-gray-200 bg-white" }, /* @__PURE__ */ React.createElement("div", { class: "grid gap-6 p-6 lg:grid-cols-2 lg:p-10" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "h-4 w-32 rounded-full bg-gray-200" }), /* @__PURE__ */ React.createElement("div", { class: "h-10 w-4/5 rounded bg-gray-200" }), /* @__PURE__ */ React.createElement("div", { class: "h-4 w-2/3 rounded bg-gray-100" }), /* @__PURE__ */ React.createElement("div", { class: "h-10 w-32 rounded-lg bg-gray-200" })), /* @__PURE__ */ React.createElement("div", { class: "aspect-video rounded-lg bg-gray-200" }))), /* @__PURE__ */ React.createElement("div", { class: "grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" }, [0, 1, 2, 3, 4].map((idx) => /* @__PURE__ */ React.createElement("div", { key: idx, class: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { class: "aspect-video rounded-lg bg-gray-200" }), /* @__PURE__ */ React.createElement("div", { class: "h-4 rounded bg-gray-200" }), /* @__PURE__ */ React.createElement("div", { class: "h-3 w-2/3 rounded bg-gray-100" })))));
 }
 function Div_new_article_list(props) {
   return /* @__PURE__ */ React.createElement("div", { class: "bg-white border-b w-full" }, /* @__PURE__ */ React.createElement("a", { href: init_url + "read/" + props.data.uuid + "/", class: "flex flex-col px-6 py-4 space-y-1 cursor-pointer hover:bg-gray-100 w-full" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-start items-center space-x-2" }, /* @__PURE__ */ React.createElement("span", { class: "font-bold text-sm w-fit max-w-9/12 truncate ..." }, props.data.title), /* @__PURE__ */ React.createElement(Span_btn_article_new, { toggle: props.data.is_new }), /* @__PURE__ */ React.createElement(Span_btn_article_secret, { toggle: props.data.is_secret }), /* @__PURE__ */ React.createElement(Span_btn_my_article, { toggle: props.data.check_reader })), /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap justify-start items-center w-full space-x-2" }, /* @__PURE__ */ React.createElement(Span_btn_user, { user_nickname: props.data.user_nickname, role: props.data.user_role }), /* @__PURE__ */ React.createElement(Span_btn_date, { date: props.data.created_at }), /* @__PURE__ */ React.createElement(Span_btn_article_read, { cnt_read: props.data.cnt_read }), /* @__PURE__ */ React.createElement(Span_btn_article_comment, { cnt_comment: props.data.cnt_comment }))));
@@ -274,9 +375,9 @@ function YoutubeVideoCard(props) {
     WebkitBoxOrient: "vertical",
     overflow: "hidden"
   };
-  return /* @__PURE__ */ React.createElement("a", { href: youtubeHref(item), class: (compact ? "w-[240px] shrink-0 sm:w-[260px] " : "") + "group block" }, /* @__PURE__ */ React.createElement("div", { class: "relative aspect-video overflow-hidden rounded-lg bg-gray-900 shadow-sm" }, /* @__PURE__ */ React.createElement("img", { src: youtubeThumb(item), alt: item.title || "YouTube thumbnail", class: "h-full w-full object-cover transition duration-300 group-hover:scale-105", loading: "lazy", onError: (event) => {
-    event.currentTarget.src = "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg";
-  } }), /* @__PURE__ */ React.createElement("div", { class: "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3" }, /* @__PURE__ */ React.createElement("span", { class: (official ? "bg-emerald-400 text-gray-900" : "bg-white/90 text-gray-900") + " inline-flex h-6 items-center rounded-full px-2 text-[11px] font-bold" }, categoryLabel(item)))), /* @__PURE__ */ React.createElement("div", { class: "mt-3 space-y-1" }, /* @__PURE__ */ React.createElement("h3", { class: "text-sm font-bold leading-5 text-gray-900 group-hover:text-emerald-600", style: titleStyle }, item.title || "\uC81C\uBAA9 \uC5C6\uC74C"), /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2 text-xs text-gray-500" }, meta ? /* @__PURE__ */ React.createElement("span", null, meta) : null, item.cnt_comment ? /* @__PURE__ */ React.createElement("span", null, "\uB313\uAE00 " + numberWithCommas(item.cnt_comment)) : null)));
+  return /* @__PURE__ */ React.createElement("a", { href: youtubeHref(item), class: (compact ? "w-[240px] shrink-0 sm:w-[260px] " : "") + "group block", "data-youtube-card": "1" }, /* @__PURE__ */ React.createElement("div", { class: "relative aspect-video overflow-hidden rounded-lg bg-gray-900 shadow-sm" }, /* @__PURE__ */ React.createElement("img", { src: youtubeThumb(item), alt: item.title || "YouTube thumbnail", class: "h-full w-full object-cover transition duration-300 group-hover:scale-105", loading: "lazy", onError: (event) => {
+    onYoutubeThumbError(event, item);
+  }, onLoad: onYoutubeThumbLoad }), official ? /* @__PURE__ */ React.createElement("div", { class: "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-3" }, /* @__PURE__ */ React.createElement("span", { class: "inline-flex h-6 items-center rounded-full bg-emerald-400 px-2 text-[11px] font-bold text-gray-900" }, categoryLabel(item))) : null), /* @__PURE__ */ React.createElement("div", { class: "mt-3 space-y-1" }, /* @__PURE__ */ React.createElement("h3", { class: "text-sm font-bold leading-5 text-gray-900 group-hover:text-emerald-600", style: titleStyle }, item.title || "\uC81C\uBAA9 \uC5C6\uC74C"), /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2 text-xs text-gray-500" }, meta ? /* @__PURE__ */ React.createElement("span", null, meta) : null, item.cnt_comment ? /* @__PURE__ */ React.createElement("span", null, "\uB313\uAE00 " + numberWithCommas(item.cnt_comment)) : null)));
 }
 function YoutubeSearchBar() {
   const submitSearch = (event) => {
@@ -295,7 +396,7 @@ function YoutubeOfficialSpotlight(props) {
     return null;
   return /* @__PURE__ */ React.createElement("section", { class: "relative overflow-hidden rounded-lg bg-gray-900 text-white shadow-xl" }, /* @__PURE__ */ React.createElement("img", { src: youtubeThumb(item), alt: "", class: "absolute inset-0 h-full w-full object-cover opacity-30", loading: "lazy", onError: (event) => {
     event.currentTarget.style.display = "none";
-  } }), /* @__PURE__ */ React.createElement("div", { class: "absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/35" }), /* @__PURE__ */ React.createElement("div", { class: "relative grid gap-8 p-6 lg:grid-cols-2 lg:p-10" }, /* @__PURE__ */ React.createElement("div", { class: "flex min-h-[280px] flex-col justify-center space-y-5" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { class: "inline-flex h-7 items-center rounded-full bg-emerald-400 px-3 text-xs font-extrabold text-gray-900" }, official ? "Web-R \uACF5\uC2DD \uCC44\uB110" : "R \uC0DD\uD0DC\uACC4 \uC601\uC0C1"), props.totalCount ? /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-white/70" }, "\uC804\uCCB4 " + numberWithCommas(props.totalCount) + "\uAC1C") : null), /* @__PURE__ */ React.createElement("div", { class: "space-y-3" }, /* @__PURE__ */ React.createElement("h2", { class: "max-w-3xl text-3xl font-extrabold leading-tight text-white sm:text-2xl" }, item.title || "Web-R YouTube"), meta ? /* @__PURE__ */ React.createElement("p", { class: "text-sm font-medium text-white/70" }, meta) : null), /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap gap-3" }, /* @__PURE__ */ React.createElement("a", { href: youtubeHref(item), class: "inline-flex h-11 items-center rounded-lg bg-white px-5 text-sm font-extrabold text-gray-900 hover:bg-emerald-50" }, "\uC790\uC138\uD788 \uBCF4\uAE30"), item.youtube_url ? /* @__PURE__ */ React.createElement("a", { href: item.youtube_url, target: "_blank", rel: "noopener noreferrer", class: "inline-flex h-11 items-center rounded-lg border border-white/30 px-5 text-sm font-bold text-white hover:bg-white/10" }, "YouTube") : null)), /* @__PURE__ */ React.createElement("a", { href: youtubeHref(item), class: "group relative flex items-center" }, /* @__PURE__ */ React.createElement("div", { class: "aspect-video w-full overflow-hidden rounded-lg border border-white/15 bg-black shadow-2xl" }, /* @__PURE__ */ React.createElement("img", { src: youtubeThumb(item), alt: item.title || "YouTube thumbnail", class: "h-full w-full object-cover transition duration-300 group-hover:scale-105", loading: "lazy", onError: (event) => {
+  } }), /* @__PURE__ */ React.createElement("div", { class: "absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/35" }), /* @__PURE__ */ React.createElement("div", { class: "relative grid gap-8 p-6 lg:grid-cols-2 lg:p-10" }, /* @__PURE__ */ React.createElement("div", { class: "flex min-h-[280px] flex-col justify-center space-y-5" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2" }, official ? /* @__PURE__ */ React.createElement("span", { class: "inline-flex h-7 items-center rounded-full bg-emerald-400 px-3 text-xs font-extrabold text-gray-900" }, "Web-R \uACF5\uC2DD") : null, props.totalCount ? /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-white/70" }, "\uC804\uCCB4 " + numberWithCommas(props.totalCount) + "\uAC1C") : null), /* @__PURE__ */ React.createElement("div", { class: "space-y-3" }, /* @__PURE__ */ React.createElement("h2", { class: "max-w-3xl text-3xl font-extrabold leading-tight text-white sm:text-2xl" }, item.title || "Web-R YouTube"), meta ? /* @__PURE__ */ React.createElement("p", { class: "text-sm font-medium text-white/70" }, meta) : null), /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap gap-3" }, /* @__PURE__ */ React.createElement("a", { href: youtubeHref(item), class: "inline-flex h-11 items-center rounded-lg bg-white px-5 text-sm font-extrabold text-gray-900 hover:bg-emerald-50" }, "\uC790\uC138\uD788 \uBCF4\uAE30"), item.youtube_url ? /* @__PURE__ */ React.createElement("a", { href: item.youtube_url, target: "_blank", rel: "noopener noreferrer", class: "inline-flex h-11 items-center rounded-lg border border-white/30 px-5 text-sm font-bold text-white hover:bg-white/10" }, "YouTube") : null)), /* @__PURE__ */ React.createElement("a", { href: youtubeHref(item), class: "group relative flex items-center" }, /* @__PURE__ */ React.createElement("div", { class: "aspect-video w-full overflow-hidden rounded-lg border border-white/15 bg-black shadow-2xl" }, /* @__PURE__ */ React.createElement("img", { src: youtubeThumb(item), alt: item.title || "YouTube thumbnail", class: "h-full w-full object-cover transition duration-300 group-hover:scale-105", loading: "lazy", onError: (event) => {
     event.currentTarget.src = "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg";
   } })))));
 }
@@ -306,34 +407,33 @@ function YoutubeRail(props) {
   return /* @__PURE__ */ React.createElement("section", { class: "w-full space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex items-end justify-between" }, /* @__PURE__ */ React.createElement("h2", { class: "text-xl font-extrabold text-gray-900" }, props.title), props.caption ? /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-gray-500" }, props.caption) : null), /* @__PURE__ */ React.createElement("div", { class: "-mx-1 flex gap-4 overflow-x-auto px-1 pb-2" }, items.map((item, idx) => /* @__PURE__ */ React.createElement(YoutubeVideoCard, { key: (item.uuid || "youtube") + "_rail_" + idx, data: item, compact: true }))));
 }
 function YoutubeCatalog(props) {
-  const items = props.items || [];
-  const official = officialItems(items);
-  const ecosystem = ecosystemItems(items);
-  const spotlight = official[0] || items[0] || null;
-  const officialRail = official.length > 1 ? official.slice(1, 12) : official.slice(0, 12);
-  const ecosystemRail = ecosystem.slice(0, 12);
+  const items = arrangeYoutubeItems(props.items || []);
   if (!items.length) {
     return /* @__PURE__ */ React.createElement("div", { class: "flex min-h-[320px] w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center" }, /* @__PURE__ */ React.createElement("p", { class: "text-lg font-extrabold text-gray-900" }, "\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("p", { class: "mt-2 text-sm text-gray-500" }, "\uB2E4\uB978 \uAC80\uC0C9\uC5B4\uB85C \uB2E4\uC2DC \uD655\uC778\uD574 \uC8FC\uC138\uC694."));
   }
-  return /* @__PURE__ */ React.createElement("div", { class: "w-full space-y-10" }, /* @__PURE__ */ React.createElement(YoutubeOfficialSpotlight, { item: spotlight, totalCount: props.totalCount }), officialRail.length ? /* @__PURE__ */ React.createElement(YoutubeRail, { title: "Web-R \uACF5\uC2DD \uCC44\uB110", caption: "\uACF5\uC2DD \uCF58\uD150\uCE20", items: officialRail }) : null, ecosystemRail.length ? /* @__PURE__ */ React.createElement(YoutubeRail, { title: "R \uC0DD\uD0DC\uACC4 \uC601\uC0C1", caption: "\uCEE4\uBBA4\uB2C8\uD2F0\uC640 \uD328\uD0A4\uC9C0 \uAD00\uB828 \uC601\uC0C1", items: ecosystemRail }) : null, /* @__PURE__ */ React.createElement("section", { class: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex items-end justify-between gap-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-xl font-extrabold text-gray-900" }, "\uC804\uCCB4 \uC601\uC0C1"), /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-gray-500" }, numberWithCommas(items.length) + "\uAC1C \uD45C\uC2DC \uC911")), /* @__PURE__ */ React.createElement("div", { class: "grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" }, items.map((item, idx) => /* @__PURE__ */ React.createElement(YoutubeVideoCard, { key: (item.uuid || "youtube") + "_grid_" + idx, data: item }))), /* @__PURE__ */ React.createElement("div", { id: props.placeholderId, class: "h-1 w-full" })));
+  return /* @__PURE__ */ React.createElement("div", { class: "w-full space-y-8" }, /* @__PURE__ */ React.createElement("section", { class: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex items-end justify-between gap-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-xl font-extrabold text-gray-900" }, "\uCD94\uCC9C \uC601\uC0C1"), /* @__PURE__ */ React.createElement("span", { class: "text-xs font-semibold text-gray-500" }, numberWithCommas(items.length) + "\uAC1C \uD45C\uC2DC \uC911")), /* @__PURE__ */ React.createElement("div", { class: "grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" }, items.map((item, idx) => /* @__PURE__ */ React.createElement(YoutubeVideoCard, { key: (item.uuid || "youtube") + "_grid_" + idx, data: item }))), /* @__PURE__ */ React.createElement("div", { id: props.placeholderId, class: "h-1 w-full" })));
 }
 function Div_article_read_header(props) {
-  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-start py-4 border-t border-b border-gray-200 w-full" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-start items-end w-full" }, /* @__PURE__ */ React.createElement("span", { class: "flex flex-row justify-start items-center text-lg font-extrabold w-full space-x-2" }, props.data.title, /* @__PURE__ */ React.createElement("div", null), /* @__PURE__ */ React.createElement(Span_btn_article_new, { toggle: props.data.is_new }), /* @__PURE__ */ React.createElement(Span_btn_article_secret, { toggle: props.data.is_secret }), /* @__PURE__ */ React.createElement(Span_btn_my_article, { toggle: props.data.check_reader }))), /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-end items-center w-full" }, /* @__PURE__ */ React.createElement("span", { class: "flex flex-row justify-end items-center text-md font-normal w-full space-x-2" }, /* @__PURE__ */ React.createElement(Span_btn_user, { user_nickname: props.data.user_nickname, role: props.data.user_role }), /* @__PURE__ */ React.createElement(Span_btn_date, { date: props.data.created_at }), /* @__PURE__ */ React.createElement(Span_btn_article_read, { cnt_read: props.data.cnt_read }), /* @__PURE__ */ React.createElement(Span_btn_article_comment, { cnt_comment: props.data.cnt_comment }))));
+  const item = props.data || {};
+  const official = isOfficialYoutube(item);
+  const meta = videoMetaText(item);
+  return /* @__PURE__ */ React.createElement("div", { class: "flex min-h-[300px] flex-col justify-center space-y-5" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2 text-sm font-bold text-white/60" }, /* @__PURE__ */ React.createElement("a", { href: init_url, class: "hover:text-white" }, "\uC720\uD29C\uBE0C"), /* @__PURE__ */ React.createElement("span", null, "/"), /* @__PURE__ */ React.createElement("span", null, official ? "Web-R \uACF5\uC2DD" : "\uC6CC\uD06C\uC0F5")), /* @__PURE__ */ React.createElement("div", { class: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2" }, official ? /* @__PURE__ */ React.createElement("span", { class: "inline-flex h-7 items-center rounded-full bg-emerald-400 px-3 text-xs font-extrabold text-gray-900" }, "Web-R \uACF5\uC2DD") : null, /* @__PURE__ */ React.createElement(Span_btn_article_new, { toggle: item.is_new }), /* @__PURE__ */ React.createElement(Span_btn_my_article, { toggle: item.check_reader })), /* @__PURE__ */ React.createElement("h1", { class: "max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-3xl" }, item.title || "\uC81C\uBAA9 \uC5C6\uC74C"), /* @__PURE__ */ React.createElement("p", { class: "max-w-3xl text-base font-medium leading-7 text-white/70" }, articleSummary(item))), /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-3 text-sm font-semibold text-white/70" }, item.user_nickname ? /* @__PURE__ */ React.createElement("span", null, item.user_nickname) : null, meta ? /* @__PURE__ */ React.createElement("span", null, meta) : null, item.cnt_comment ? /* @__PURE__ */ React.createElement("span", null, "\uB313\uAE00 " + numberWithCommas(item.cnt_comment)) : null));
 }
 function Div_article_read_youtube(props) {
-  if (!props.data || !props.data.youtube_url)
+  const item = props.data || {};
+  const embedURL = youtubeEmbedUrl(item.youtube_url);
+  if (!embedURL)
     return null;
-  return /* @__PURE__ */ React.createElement("section", { class: "bg-white py-8 lg:py-16 antialiased" }, /* @__PURE__ */ React.createElement("div", { class: "w-full mx-auto px-4 space-y-2" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-2 text-md lg:text-lg" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { class: "flex h-full items-center" }, /* @__PURE__ */ React.createElement("div", { class: "w-full overflow-hidden rounded-lg border border-white/15 bg-black shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { class: "aspect-video w-full" }, /* @__PURE__ */ React.createElement(
     "iframe",
     {
-      width: "560",
-      height: "315",
-      src: props.data.youtube_url.replace("watch?v=", "embed/"),
+      class: "h-full w-full",
+      src: embedURL,
       title: "YouTube video player",
-      frameborder: "0",
+      frameBorder: "0",
       allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
-      referrerpolicy: "strict-origin-when-cross-origin",
-      allowfullscreen: true
+      referrerPolicy: "strict-origin-when-cross-origin",
+      allowFullScreen: true
     }
   ))));
 }
@@ -345,20 +445,9 @@ function Div_article_read_file(props) {
   return /* @__PURE__ */ React.createElement("section", { class: "bg-white py-8 lg:py-16 antialiased" }, /* @__PURE__ */ React.createElement("div", { class: "w-full mx-auto px-4 space-y-2" }, /* @__PURE__ */ React.createElement("div", { class: "flex justify-between items-center mb-6" }, /* @__PURE__ */ React.createElement("h2", { class: "text-md lg:text-lg font-bold text-gray-900" }, "\uCCA8\uBD80\uD30C\uC77C")), /* @__PURE__ */ React.createElement("form", { class: "mb-3" }, /* @__PURE__ */ React.createElement("div", { class: "w-full bg-gray-50 rounded-lg border border-gray-200" })), /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-center items-start w-full" }, /* @__PURE__ */ React.createElement("a", { href: fileHref, target: "_blank", class: "flex flex-row justify-end items-center text-md font-normal w-fit space-x-2 cursor-pointer hover:bg-gray-100" }, article.file_name))));
 }
 function Div_article_read_buttons(props) {
-  const btnClass = "font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full";
-  const writeBtn = "text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 " + btnClass + " hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300";
-  const listBtn = "text-gray-900 bg-white border border-gray-900 " + btnClass + " focus:outline-none hover:bg-gray-300 focus:ring-4 focus:ring-gray-100";
-  const editBtn = "text-green-700 border border-green-700 " + btnClass + " py-1 hover:text-white hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300";
-  const deleteBtn = "text-red-700 border border-red-700 " + btnClass + " py-1 hover:text-white hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300";
-  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-2" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center space-y-2 w-full" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => getCurrentUsername() ? location.href = init_url + "write/" : alert("\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4."),
-      class: writeBtn
-    },
-    "\uC0C8 \uAE00 \uC4F0\uAE30"
-  ), /* @__PURE__ */ React.createElement("a", { href: init_url, class: listBtn }, "\uBAA9\uB85D\uC73C\uB85C")), props.data.check_reader !== "user" && /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-2 justify-center items-center gap-2 w-full" }, /* @__PURE__ */ React.createElement("button", { onClick: () => location.href = init_url + "edit/" + orderID + "/", class: editBtn }, "\uC218\uC815"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => click_btn_delete(), class: deleteBtn }, "\uC0AD\uC81C")));
+  const item = props.data || {};
+  const btnClass = "inline-flex h-11 items-center justify-center rounded-lg text-sm font-extrabold";
+  return /* @__PURE__ */ React.createElement("div", { class: "overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm" }, /* @__PURE__ */ React.createElement("div", { class: "space-y-4 p-5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { class: "text-sm font-bold text-gray-500" }, "\uC601\uC0C1"), /* @__PURE__ */ React.createElement("p", { class: "mt-1 text-2xl font-extrabold text-gray-900" }, "\uBB34\uB8CC")), item.youtube_url ? /* @__PURE__ */ React.createElement("a", { href: item.youtube_url, target: "_blank", rel: "noopener noreferrer", class: btnClass + " w-full bg-emerald-500 text-white hover:bg-emerald-600" }, "YouTube\uC5D0\uC11C \uBCF4\uAE30") : null, /* @__PURE__ */ React.createElement("a", { href: init_url, class: btnClass + " w-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-50" }, "\uBAA9\uB85D\uC73C\uB85C")), /* @__PURE__ */ React.createElement("div", { class: "border-t border-gray-100 p-5 text-sm" }, /* @__PURE__ */ React.createElement("dl", { class: "grid grid-cols-[90px_1fr] gap-y-2 text-gray-500" }, /* @__PURE__ */ React.createElement("dt", null, "\uAC8C\uC2DC\uC790"), /* @__PURE__ */ React.createElement("dd", { class: "font-bold text-gray-900" }, item.user_nickname || "-"), /* @__PURE__ */ React.createElement("dt", null, "\uAC8C\uC2DC\uC77C"), /* @__PURE__ */ React.createElement("dd", { class: "font-bold text-gray-900" }, displayDate(item.youtube_publish_date || item.created_at) || "-"), /* @__PURE__ */ React.createElement("dt", null, "\uC870\uD68C\uC218"), /* @__PURE__ */ React.createElement("dd", { class: "font-bold text-gray-900" }, numberWithCommas(item.youtube_views || item.cnt_read || 0)))), item.check_reader !== "user" && /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-2 gap-2 border-t border-gray-100 p-5" }, /* @__PURE__ */ React.createElement("button", { onClick: () => location.href = init_url + "edit/" + orderID + "/", class: btnClass + " border border-green-600 text-green-700 hover:bg-green-50" }, "\uC218\uC815"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => click_btn_delete(), class: btnClass + " border border-red-600 text-red-700 hover:bg-red-50" }, "\uC0AD\uC81C")));
 }
 function Div_btn_comment_editor_footer_button(props) {
   return /* @__PURE__ */ React.createElement(
@@ -500,7 +589,7 @@ function YouTubeListPage(props) {
   return /* @__PURE__ */ React.createElement("div", { class: "w-full bg-gray-50" }, /* @__PURE__ */ React.createElement("div", { class: "mx-auto flex w-full max-w-screen-2xl flex-col gap-8 px-6 py-8 md:px-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", { class: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { class: "inline-flex h-7 items-center rounded-full bg-emerald-100 px-3 text-xs font-extrabold text-emerald-700" }, "Web-R Workshop"), /* @__PURE__ */ React.createElement("span", { class: "inline-flex h-7 items-center rounded-full bg-gray-900 px-3 text-xs font-extrabold text-white" }, "YouTube")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { class: "text-3xl font-extrabold leading-tight text-gray-900 sm:text-2xl" }, header_title), /* @__PURE__ */ React.createElement("p", { class: "mt-1 text-sm font-semibold text-gray-500" }, header_subtitle))), props.showWriteButton && /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => location.href = init_url + "write/", class: "h-10 rounded-lg bg-gray-900 px-5 text-sm font-bold text-white hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200" }, "\uAE00\uC4F0\uAE30")), /* @__PURE__ */ React.createElement(YoutubeSearchBar, null), /* @__PURE__ */ React.createElement("div", { id: "div_community_list", class: "w-full" }, /* @__PURE__ */ React.createElement("div", { id: "div_article_list", class: "w-full" }, /* @__PURE__ */ React.createElement(Div_article_list_skeleton, null)))));
 }
 function YouTubeReadPage() {
-  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto md:px-8" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: header_title, subtitle: header_subtitle }), /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-4" }, /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-3 justify-center items-start w-full gap-4 md:grid-cols-1" }, /* @__PURE__ */ React.createElement("div", { class: "col-span-2 w-full" }, /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_header" }, /* @__PURE__ */ React.createElement("div", { class: "w-full h-12 bg-gray-300 mb-4 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_youtube" }, /* @__PURE__ */ React.createElement("div", { class: "w-full h-48 bg-gray-300 mb-4 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_content" }, /* @__PURE__ */ React.createElement("div", { class: "w-full h-48 bg-gray-300 mb-4 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_file" }, /* @__PURE__ */ React.createElement("div", { class: "w-full h-12 bg-gray-300 mb-4 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_comment" }, /* @__PURE__ */ React.createElement("div", { class: "w-full h-24 bg-gray-300 animate-pulse" }))), /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-start w-full space-y-4" }, /* @__PURE__ */ React.createElement("div", { id: "div_article_read_buttons", class: "w-full" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_article_famous_list", title: "\uCD5C\uADFC \uC778\uAE30 \uAE00" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_new_comment_list", title: "\uCD5C\uADFC \uB313\uAE00" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_my_article_list", title: "\uB0B4\uAC00 \uC4F4 \uAE00" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_my_comment_list", title: "\uB0B4\uAC00 \uC4F4 \uB313\uAE00" })))));
+  return /* @__PURE__ */ React.createElement("div", { class: "w-full bg-white" }, /* @__PURE__ */ React.createElement("section", { class: "bg-gray-950" }, /* @__PURE__ */ React.createElement("div", { class: "mx-auto grid w-full max-w-screen-xl gap-8 px-6 py-10 lg:grid-cols-[1.05fr_.95fr] md:px-4" }, /* @__PURE__ */ React.createElement("div", { id: "div_community_read_header" }, /* @__PURE__ */ React.createElement("div", { class: "min-h-[300px] space-y-4 py-10 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { class: "h-4 w-40 rounded-full bg-white/20" }), /* @__PURE__ */ React.createElement("div", { class: "h-10 w-4/5 rounded bg-white/20" }), /* @__PURE__ */ React.createElement("div", { class: "h-4 w-3/4 rounded bg-white/10" }), /* @__PURE__ */ React.createElement("div", { class: "h-4 w-2/3 rounded bg-white/10" }))), /* @__PURE__ */ React.createElement("div", { id: "div_community_read_youtube" }, /* @__PURE__ */ React.createElement("div", { class: "aspect-video w-full rounded-lg bg-gray-200 animate-pulse" })))), /* @__PURE__ */ React.createElement("div", { class: "border-b border-gray-200 bg-white" }, /* @__PURE__ */ React.createElement("div", { class: "mx-auto flex w-full max-w-screen-xl gap-8 px-6 md:px-4" }, /* @__PURE__ */ React.createElement("span", { class: "border-b-2 border-gray-900 py-4 text-sm font-extrabold text-gray-900" }, "\uC601\uC0C1 \uC18C\uAC1C"), /* @__PURE__ */ React.createElement("a", { href: init_url, class: "py-4 text-sm font-bold text-gray-500 hover:text-gray-900" }, "\uBAA9\uB85D"))), /* @__PURE__ */ React.createElement("div", { class: "mx-auto grid w-full max-w-screen-xl gap-8 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_320px] md:px-4" }, /* @__PURE__ */ React.createElement("main", { class: "min-w-0 space-y-8" }, /* @__PURE__ */ React.createElement("section", { class: "space-y-5" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "\uC601\uC0C1 \uAC1C\uC694"), /* @__PURE__ */ React.createElement("div", { class: "rounded-lg border border-gray-200 bg-white p-6" }, /* @__PURE__ */ React.createElement("div", { id: "div_community_read_content", class: "w-full" }, /* @__PURE__ */ React.createElement("div", { class: "h-48 w-full rounded bg-gray-200 animate-pulse" })))), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_file" }, /* @__PURE__ */ React.createElement("div", { class: "h-12 w-full rounded bg-gray-200 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_community_read_comment" }, /* @__PURE__ */ React.createElement("div", { class: "h-24 w-full rounded bg-gray-200 animate-pulse" }))), /* @__PURE__ */ React.createElement("aside", { class: "space-y-4 lg:sticky lg:top-6 lg:self-start" }, /* @__PURE__ */ React.createElement("div", { id: "div_article_read_buttons", class: "w-full" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_article_famous_list", title: "\uCD5C\uADFC \uC778\uAE30 \uAE00" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_new_comment_list", title: "\uCD5C\uADFC \uB313\uAE00" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_my_article_list", title: "\uB0B4\uAC00 \uC4F4 \uAE00" }), /* @__PURE__ */ React.createElement(Div_sidelist_skeleton, { id: "div_my_comment_list", title: "\uB0B4\uAC00 \uC4F4 \uB313\uAE00" }))));
 }
 function renderArticleSubmitButtons(loading = false) {
   const target = document.getElementById("div_button_list");
@@ -594,7 +683,7 @@ async function get_article_list_youtube(mode_value) {
   const data = await postForm("/blank/ajax_board/get_article_list_youtube/", request_data);
   article_counter = Number(data && data.count ? data.count.cnt : 0);
   const chunk = Object.keys(data.list || {}).map((key) => data.list[key]);
-  youtubeLoadedItems = youtubeLoadedItems.concat(chunk);
+  youtubeLoadedItems = dedupeYoutubeItems(youtubeLoadedItems.concat(chunk));
   const placeholderId = "div_article_list_" + (page_num + 1);
   ReactDOM.render(/* @__PURE__ */ React.createElement(YoutubeCatalog, { items: youtubeLoadedItems, totalCount: article_counter, placeholderId }), document.getElementById("div_article_list"));
   toggle_page = false;

@@ -129,16 +129,116 @@ function youtubeHref(item) {
     return init_url + "read/" + item.uuid + "/";
 }
 
+function youtubeVideoID(rawURL) {
+    const raw = String(rawURL || "").trim();
+    if (!raw) return "";
+    try {
+        const parsed = new URL(raw);
+        if (parsed.hostname.includes("youtu.be")) {
+            return parsed.pathname.replace("/", "").split("/")[0];
+        }
+        if (parsed.pathname.includes("/embed/")) {
+            return parsed.pathname.split("/embed/")[1].split("/")[0];
+        }
+        if (parsed.pathname.includes("/shorts/")) {
+            return parsed.pathname.split("/shorts/")[1].split("/")[0];
+        }
+        return parsed.searchParams.get("v") || "";
+    } catch (error) {
+        const match = raw.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/);
+        return match ? match[1] : "";
+    }
+}
+
+function youtubeFallbackThumb(item) {
+    const videoID = youtubeVideoID(item && item.youtube_url);
+    return videoID ? "https://i.ytimg.com/vi/" + videoID + "/hqdefault.jpg" : "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg";
+}
+
+function onYoutubeThumbError(event, item) {
+    const fallback = youtubeFallbackThumb(item);
+    if (event.currentTarget.dataset.fallbackApplied === "1" || event.currentTarget.src === fallback) {
+        const card = event.currentTarget.closest("[data-youtube-card]");
+        if (card) card.classList.add("hidden");
+        return;
+    }
+    event.currentTarget.dataset.fallbackApplied = "1";
+    event.currentTarget.src = fallback;
+}
+
+function onYoutubeThumbLoad(event) {
+    if (event.currentTarget.naturalWidth <= 120 && event.currentTarget.naturalHeight <= 90) {
+        const card = event.currentTarget.closest("[data-youtube-card]");
+        if (card) card.classList.add("hidden");
+    }
+}
+
+function youtubeEmbedUrl(rawURL) {
+    const videoID = youtubeVideoID(rawURL);
+    return videoID ? "https://www.youtube.com/embed/" + videoID + "?rel=0&modestbranding=1" : "";
+}
+
+function isRenderableYoutubeItem(item) {
+    return !!(item && item.uuid && item.youtube_url && item.title);
+}
+
 function isOfficialYoutube(item) {
     return item && (item.source === "article" || Number(item.sort_priority || 0) > 0);
 }
 
-function officialItems(items) {
-    return (items || []).filter(isOfficialYoutube);
+function dedupeYoutubeItems(items) {
+    const out = [];
+    const indexByKey = {};
+
+    (items || []).filter(isRenderableYoutubeItem).forEach((item) => {
+        const key = youtubeVideoID(item.youtube_url) || item.uuid;
+        if (!key) return;
+        const previousIndex = indexByKey[key];
+        if (previousIndex == null) {
+            indexByKey[key] = out.length;
+            out.push(item);
+            return;
+        }
+        const previous = out[previousIndex];
+        const shouldReplace = (isOfficialYoutube(item) && !isOfficialYoutube(previous)) ||
+            (isOfficialYoutube(item) === isOfficialYoutube(previous) && Number(item.youtube_views || 0) > Number(previous.youtube_views || 0));
+        if (shouldReplace) {
+            out[previousIndex] = item;
+        }
+    });
+
+    return out;
 }
 
-function ecosystemItems(items) {
-    return (items || []).filter((item) => !isOfficialYoutube(item));
+function arrangeYoutubeItems(items) {
+    const base = dedupeYoutubeItems(items);
+    const byLatest = [...base].sort((a, b) => String(b.youtube_publish_date || b.created_at || "").localeCompare(String(a.youtube_publish_date || a.created_at || "")));
+    const byViews = [...base].sort((a, b) => Number(b.youtube_views || 0) - Number(a.youtube_views || 0));
+    const byOfficial = [...base].filter(isOfficialYoutube).sort((a, b) => String(b.youtube_publish_date || b.created_at || "").localeCompare(String(a.youtube_publish_date || a.created_at || "")));
+    const byLowViews = [...base]
+        .filter((item) => Number(item.youtube_views || 0) > 0)
+        .sort((a, b) => Number(a.youtube_views || 0) - Number(b.youtube_views || 0));
+    const lanes = [byLatest, byViews, byOfficial, byLowViews];
+    const seen = {};
+    const out = [];
+
+    for (let i = 0; out.length < base.length && i < base.length * lanes.length; i += 1) {
+        lanes.forEach((lane) => {
+            const candidate = lane.shift();
+            if (!candidate) return;
+            const key = youtubeVideoID(candidate.youtube_url) || candidate.uuid;
+            if (seen[key]) return;
+            seen[key] = true;
+            out.push(candidate);
+        });
+    }
+
+    base.forEach((item) => {
+        const key = youtubeVideoID(item.youtube_url) || item.uuid;
+        if (!seen[key]) out.push(item);
+    });
+
+    return out;
 }
 
 function videoMetaText(item) {
@@ -150,9 +250,19 @@ function videoMetaText(item) {
 
 function categoryLabel(item) {
     if (isOfficialYoutube(item)) return "Web-R 공식";
-    const raw = item.category_url_sub || item.category || "";
-    if (!raw || raw === "search_result") return "R 생태계";
-    return String(raw).replace(/_/g, " ");
+    return "";
+}
+
+function plainTextFromHTML(value) {
+    const div = document.createElement("div");
+    div.innerHTML = value || "";
+    return (div.textContent || div.innerText || "").replace(/\s+/g, " ").trim();
+}
+
+function articleSummary(item) {
+    const text = plainTextFromHTML(item && item.content);
+    if (!text) return "Web-R 워크샵에서 제공하는 YouTube 영상입니다.";
+    return text.length > 170 ? text.slice(0, 170) + "..." : text;
 }
 
 async function _compressImageOnce(blob, maxWidth, maxHeight, quality) {
@@ -349,15 +459,15 @@ function Div_sidelist_skeleton(props) {
 function Div_article_list_skeleton() {
     return (
         <div class="w-full space-y-8 animate-pulse">
-            <div class="overflow-hidden rounded-lg bg-gray-900">
+            <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
                 <div class="grid gap-6 p-6 lg:grid-cols-2 lg:p-10">
                     <div class="flex flex-col justify-center space-y-4">
-                        <div class="h-4 w-32 rounded-full bg-white/20"></div>
-                        <div class="h-10 w-4/5 rounded bg-white/20"></div>
-                        <div class="h-4 w-2/3 rounded bg-white/10"></div>
-                        <div class="h-10 w-32 rounded-lg bg-white/20"></div>
+                        <div class="h-4 w-32 rounded-full bg-gray-200"></div>
+                        <div class="h-10 w-4/5 rounded bg-gray-200"></div>
+                        <div class="h-4 w-2/3 rounded bg-gray-100"></div>
+                        <div class="h-10 w-32 rounded-lg bg-gray-200"></div>
                     </div>
-                    <div class="aspect-video rounded-lg bg-white/10"></div>
+                    <div class="aspect-video rounded-lg bg-gray-200"></div>
                 </div>
             </div>
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
@@ -437,7 +547,7 @@ function YoutubeVideoCard(props) {
     };
 
     return (
-        <a href={youtubeHref(item)} class={(compact ? "w-[240px] shrink-0 sm:w-[260px] " : "") + "group block"}>
+        <a href={youtubeHref(item)} class={(compact ? "w-[240px] shrink-0 sm:w-[260px] " : "") + "group block"} data-youtube-card="1">
             <div class="relative aspect-video overflow-hidden rounded-lg bg-gray-900 shadow-sm">
                 <img
                     src={youtubeThumb(item)}
@@ -445,14 +555,17 @@ function YoutubeVideoCard(props) {
                     class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     loading="lazy"
                     onError={(event) => {
-                        event.currentTarget.src = "https://cdn.jsdelivr.net/gh/statground/web-r_CDN/images/svg/menu_youtube.svg";
+                        onYoutubeThumbError(event, item);
                     }}
+                    onLoad={onYoutubeThumbLoad}
                 />
-                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3">
-                    <span class={(official ? "bg-emerald-400 text-gray-900" : "bg-white/90 text-gray-900") + " inline-flex h-6 items-center rounded-full px-2 text-[11px] font-bold"}>
-                        {categoryLabel(item)}
-                    </span>
-                </div>
+                {official ? (
+                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-3">
+                        <span class="inline-flex h-6 items-center rounded-full bg-emerald-400 px-2 text-[11px] font-bold text-gray-900">
+                            {categoryLabel(item)}
+                        </span>
+                    </div>
+                ) : null}
             </div>
             <div class="mt-3 space-y-1">
                 <h3 class="text-sm font-bold leading-5 text-gray-900 group-hover:text-emerald-600" style={titleStyle}>
@@ -515,9 +628,11 @@ function YoutubeOfficialSpotlight(props) {
             <div class="relative grid gap-8 p-6 lg:grid-cols-2 lg:p-10">
                 <div class="flex min-h-[280px] flex-col justify-center space-y-5">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex h-7 items-center rounded-full bg-emerald-400 px-3 text-xs font-extrabold text-gray-900">
-                            {official ? "Web-R 공식 채널" : "R 생태계 영상"}
-                        </span>
+                        {official ? (
+                            <span class="inline-flex h-7 items-center rounded-full bg-emerald-400 px-3 text-xs font-extrabold text-gray-900">
+                                Web-R 공식
+                            </span>
+                        ) : null}
                         {props.totalCount ? <span class="text-xs font-semibold text-white/70">전체 {numberWithCommas(props.totalCount)}개</span> : null}
                     </div>
                     <div class="space-y-3">
@@ -575,12 +690,7 @@ function YoutubeRail(props) {
 }
 
 function YoutubeCatalog(props) {
-    const items = props.items || [];
-    const official = officialItems(items);
-    const ecosystem = ecosystemItems(items);
-    const spotlight = official[0] || items[0] || null;
-    const officialRail = official.length > 1 ? official.slice(1, 12) : official.slice(0, 12);
-    const ecosystemRail = ecosystem.slice(0, 12);
+    const items = arrangeYoutubeItems(props.items || []);
 
     if (!items.length) {
         return (
@@ -592,13 +702,10 @@ function YoutubeCatalog(props) {
     }
 
     return (
-        <div class="w-full space-y-10">
-            <YoutubeOfficialSpotlight item={spotlight} totalCount={props.totalCount} />
-            {officialRail.length ? <YoutubeRail title="Web-R 공식 채널" caption="공식 콘텐츠" items={officialRail} /> : null}
-            {ecosystemRail.length ? <YoutubeRail title="R 생태계 영상" caption="커뮤니티와 패키지 관련 영상" items={ecosystemRail} /> : null}
+        <div class="w-full space-y-8">
             <section class="space-y-4">
                 <div class="flex items-end justify-between gap-4">
-                    <h2 class="text-xl font-extrabold text-gray-900">전체 영상</h2>
+                    <h2 class="text-xl font-extrabold text-gray-900">추천 영상</h2>
                     <span class="text-xs font-semibold text-gray-500">{numberWithCommas(items.length)}개 표시 중</span>
                 </div>
                 <div class="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
@@ -613,25 +720,29 @@ function YoutubeCatalog(props) {
 }
 
 function Div_article_read_header(props) {
+    const item = props.data || {};
+    const official = isOfficialYoutube(item);
+    const meta = videoMetaText(item);
     return (
-        <div class="flex flex-col justify-center items-start py-4 border-t border-b border-gray-200 w-full">
-            <div class="flex flex-row justify-start items-end w-full">
-                <span class="flex flex-row justify-start items-center text-lg font-extrabold w-full space-x-2">
-                    {props.data.title}
-                    <div></div>
-                    <Span_btn_article_new toggle={props.data.is_new} />
-                    <Span_btn_article_secret toggle={props.data.is_secret} />
-                    <Span_btn_my_article toggle={props.data.check_reader} />
-                </span>
+        <div class="flex min-h-[300px] flex-col justify-center space-y-5">
+            <div class="flex flex-wrap items-center gap-2 text-sm font-bold text-white/60">
+                <a href={init_url} class="hover:text-white">유튜브</a>
+                <span>/</span>
+                <span>{official ? "Web-R 공식" : "워크샵"}</span>
             </div>
-
-            <div class="flex flex-row justify-end items-center w-full">
-                <span class="flex flex-row justify-end items-center text-md font-normal w-full space-x-2">
-                    <Span_btn_user user_nickname={props.data.user_nickname} role={props.data.user_role} />
-                    <Span_btn_date date={props.data.created_at} />
-                    <Span_btn_article_read cnt_read={props.data.cnt_read} />
-                    <Span_btn_article_comment cnt_comment={props.data.cnt_comment} />
-                </span>
+            <div class="space-y-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    {official ? <span class="inline-flex h-7 items-center rounded-full bg-emerald-400 px-3 text-xs font-extrabold text-gray-900">Web-R 공식</span> : null}
+                    <Span_btn_article_new toggle={item.is_new} />
+                    <Span_btn_my_article toggle={item.check_reader} />
+                </div>
+                <h1 class="max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-3xl">{item.title || "제목 없음"}</h1>
+                <p class="max-w-3xl text-base font-medium leading-7 text-white/70">{articleSummary(item)}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-sm font-semibold text-white/70">
+                {item.user_nickname ? <span>{item.user_nickname}</span> : null}
+                {meta ? <span>{meta}</span> : null}
+                {item.cnt_comment ? <span>댓글 {numberWithCommas(item.cnt_comment)}</span> : null}
             </div>
         </div>
     );
@@ -639,24 +750,25 @@ function Div_article_read_header(props) {
 
 
 function Div_article_read_youtube(props) {
-    if (!props.data || !props.data.youtube_url) return null;
+    const item = props.data || {};
+    const embedURL = youtubeEmbedUrl(item.youtube_url);
+    if (!embedURL) return null;
     return (
-        <section class="bg-white py-8 lg:py-16 antialiased">
-            <div class="w-full mx-auto px-4 space-y-2">
-                <div class="flex flex-col justify-center items-center w-full space-y-2 text-md lg:text-lg">
+        <div class="flex h-full items-center">
+            <div class="w-full overflow-hidden rounded-lg border border-white/15 bg-black shadow-2xl">
+                <div class="aspect-video w-full">
                     <iframe
-                        width="560"
-                        height="315"
-                        src={props.data.youtube_url.replace("watch?v=", "embed/")}
+                        class="h-full w-full"
+                        src={embedURL}
                         title="YouTube video player"
-                        frameborder="0"
+                        frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        allowfullscreen
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen={true}
                     ></iframe>
                 </div>
             </div>
-        </section>
+        </div>
     );
 }
 
@@ -688,28 +800,37 @@ function Div_article_read_file(props) {
 }
 
 function Div_article_read_buttons(props) {
-    const btnClass = "font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full";
-    const writeBtn = "text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 " + btnClass + " hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300";
-    const listBtn = "text-gray-900 bg-white border border-gray-900 " + btnClass + " focus:outline-none hover:bg-gray-300 focus:ring-4 focus:ring-gray-100";
-    const editBtn = "text-green-700 border border-green-700 " + btnClass + " py-1 hover:text-white hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300";
-    const deleteBtn = "text-red-700 border border-red-700 " + btnClass + " py-1 hover:text-white hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300";
+    const item = props.data || {};
+    const btnClass = "inline-flex h-11 items-center justify-center rounded-lg text-sm font-extrabold";
 
     return (
-        <div class="flex flex-col justify-center items-center w-full space-y-2">
-            <div class="flex flex-col justify-center items-center space-y-2 w-full">
-                <button
-                    type="button"
-                    onClick={() => getCurrentUsername() ? (location.href = init_url + "write/") : alert("로그인이 필요합니다.")}
-                    class={writeBtn}
-                >
-                    새 글 쓰기
-                </button>
-                <a href={init_url} class={listBtn}>목록으로</a>
+        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div class="space-y-4 p-5">
+                <div>
+                    <p class="text-sm font-bold text-gray-500">영상</p>
+                    <p class="mt-1 text-2xl font-extrabold text-gray-900">무료</p>
+                </div>
+                {item.youtube_url ? (
+                    <a href={item.youtube_url} target="_blank" rel="noopener noreferrer" class={btnClass + " w-full bg-emerald-500 text-white hover:bg-emerald-600"}>
+                        YouTube에서 보기
+                    </a>
+                ) : null}
+                <a href={init_url} class={btnClass + " w-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"}>목록으로</a>
             </div>
-            {props.data.check_reader !== "user" && (
-                <div class="grid grid-cols-2 justify-center items-center gap-2 w-full">
-                    <button onClick={() => location.href = init_url + "edit/" + orderID + "/"} class={editBtn}>수정</button>
-                    <button type="button" onClick={() => click_btn_delete()} class={deleteBtn}>삭제</button>
+            <div class="border-t border-gray-100 p-5 text-sm">
+                <dl class="grid grid-cols-[90px_1fr] gap-y-2 text-gray-500">
+                    <dt>게시자</dt>
+                    <dd class="font-bold text-gray-900">{item.user_nickname || "-"}</dd>
+                    <dt>게시일</dt>
+                    <dd class="font-bold text-gray-900">{displayDate(item.youtube_publish_date || item.created_at) || "-"}</dd>
+                    <dt>조회수</dt>
+                    <dd class="font-bold text-gray-900">{numberWithCommas(item.youtube_views || item.cnt_read || 0)}</dd>
+                </dl>
+            </div>
+            {item.check_reader !== "user" && (
+                <div class="grid grid-cols-2 gap-2 border-t border-gray-100 p-5">
+                    <button onClick={() => location.href = init_url + "edit/" + orderID + "/"} class={btnClass + " border border-green-600 text-green-700 hover:bg-green-50"}>수정</button>
+                    <button type="button" onClick={() => click_btn_delete()} class={btnClass + " border border-red-600 text-red-700 hover:bg-red-50"}>삭제</button>
                 </div>
             )}
         </div>
@@ -1096,37 +1217,55 @@ function YouTubeListPage(props) {
 
 function YouTubeReadPage() {
     return (
-        <div class="flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto md:px-8">
-            <Div_page_header title={header_title} subtitle={header_subtitle} />
-
-            <div class="flex flex-col justify-center items-center w-full space-y-4">
-                <div class="grid grid-cols-3 justify-center items-start w-full gap-4 md:grid-cols-1">
-                    <div class="col-span-2 w-full">
-                        <div class="w-full" id="div_community_read_header">
-                            <div class="w-full h-12 bg-gray-300 mb-4 animate-pulse"></div>
-                        </div>
-                        <div class="w-full" id="div_community_read_youtube">
-                            <div class="w-full h-48 bg-gray-300 mb-4 animate-pulse"></div>
-                        </div>
-                        <div class="w-full" id="div_community_read_content">
-                            <div class="w-full h-48 bg-gray-300 mb-4 animate-pulse"></div>
-                        </div>
-                        <div class="w-full" id="div_community_read_file">
-                            <div class="w-full h-12 bg-gray-300 mb-4 animate-pulse"></div>
-                        </div>
-                        <div class="w-full" id="div_community_read_comment">
-                            <div class="w-full h-24 bg-gray-300 animate-pulse"></div>
+        <div class="w-full bg-white">
+            <section class="bg-gray-950">
+                <div class="mx-auto grid w-full max-w-screen-xl gap-8 px-6 py-10 lg:grid-cols-[1.05fr_.95fr] md:px-4">
+                    <div id="div_community_read_header">
+                        <div class="min-h-[300px] space-y-4 py-10 animate-pulse">
+                            <div class="h-4 w-40 rounded-full bg-white/20"></div>
+                            <div class="h-10 w-4/5 rounded bg-white/20"></div>
+                            <div class="h-4 w-3/4 rounded bg-white/10"></div>
+                            <div class="h-4 w-2/3 rounded bg-white/10"></div>
                         </div>
                     </div>
-
-                    <div class="flex flex-col justify-center items-start w-full space-y-4">
-                        <div id="div_article_read_buttons" class="w-full"></div>
-                        <Div_sidelist_skeleton id="div_article_famous_list" title="최근 인기 글" />
-                        <Div_sidelist_skeleton id="div_new_comment_list" title="최근 댓글" />
-                        <Div_sidelist_skeleton id="div_my_article_list" title="내가 쓴 글" />
-                        <Div_sidelist_skeleton id="div_my_comment_list" title="내가 쓴 댓글" />
+                    <div id="div_community_read_youtube">
+                        <div class="aspect-video w-full rounded-lg bg-gray-200 animate-pulse"></div>
                     </div>
                 </div>
+            </section>
+
+            <div class="border-b border-gray-200 bg-white">
+                <div class="mx-auto flex w-full max-w-screen-xl gap-8 px-6 md:px-4">
+                    <span class="border-b-2 border-gray-900 py-4 text-sm font-extrabold text-gray-900">영상 소개</span>
+                    <a href={init_url} class="py-4 text-sm font-bold text-gray-500 hover:text-gray-900">목록</a>
+                </div>
+            </div>
+
+            <div class="mx-auto grid w-full max-w-screen-xl gap-8 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_320px] md:px-4">
+                <main class="min-w-0 space-y-8">
+                    <section class="space-y-5">
+                        <h2 class="text-2xl font-extrabold text-gray-900">영상 개요</h2>
+                        <div class="rounded-lg border border-gray-200 bg-white p-6">
+                            <div id="div_community_read_content" class="w-full">
+                                <div class="h-48 w-full rounded bg-gray-200 animate-pulse"></div>
+                            </div>
+                        </div>
+                    </section>
+                    <div class="w-full" id="div_community_read_file">
+                        <div class="h-12 w-full rounded bg-gray-200 animate-pulse"></div>
+                    </div>
+                    <div class="w-full" id="div_community_read_comment">
+                        <div class="h-24 w-full rounded bg-gray-200 animate-pulse"></div>
+                    </div>
+                </main>
+
+                <aside class="space-y-4 lg:sticky lg:top-6 lg:self-start">
+                    <div id="div_article_read_buttons" class="w-full"></div>
+                    <Div_sidelist_skeleton id="div_article_famous_list" title="최근 인기 글" />
+                    <Div_sidelist_skeleton id="div_new_comment_list" title="최근 댓글" />
+                    <Div_sidelist_skeleton id="div_my_article_list" title="내가 쓴 글" />
+                    <Div_sidelist_skeleton id="div_my_comment_list" title="내가 쓴 댓글" />
+                </aside>
             </div>
         </div>
     );
@@ -1272,7 +1411,7 @@ async function get_article_list_youtube(mode_value) {
     article_counter = Number(data && data.count ? data.count.cnt : 0);
 
     const chunk = Object.keys(data.list || {}).map((key) => data.list[key]);
-    youtubeLoadedItems = youtubeLoadedItems.concat(chunk);
+    youtubeLoadedItems = dedupeYoutubeItems(youtubeLoadedItems.concat(chunk));
     const placeholderId = "div_article_list_" + (page_num + 1);
 
     ReactDOM.render(<YoutubeCatalog items={youtubeLoadedItems} totalCount={article_counter} placeholderId={placeholderId} />, document.getElementById("div_article_list"));
