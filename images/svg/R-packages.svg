@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 317 287" role="img" aria-label="R Packages" fill="none">
-  <path d="M36 83 159 36l123 47-123 51z" fill="#c8d9e9"/>
-  <path d="M36 83v125l123 51V134z" fill="#b5c9dc"/>
-  <path d="M159 134v125l123-51V83z" fill="#9fb6ca"/>
-  <path d="M36 83 159 134l123-51" stroke="#dce8f3" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M159 36v98" stroke="#eff6fb" stroke-width="5" stroke-linecap="round"/>
-  <path d="M125 54 247 101" stroke="#e9f2f8" stroke-width="5" stroke-linecap="round" opacity=".8"/>
-  <path d="M72 184h31v-78H72" stroke="#0d7fa4" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M103 106h22c26 0 43 15 43 38 0 17-10 30-27 35l32 45h-33l-28-42h-9" stroke="#0d7fa4" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M103 143h20c9 0 15-5 15-12s-6-12-16-12h-19z" stroke="#0d7fa4" stroke-width="8" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 317 287" role="img" aria-label="R Packages symbol" fill="none">
+  <path d="M48 83 158.5 38 269 83 158.5 130z" fill="#d9e7f3"/>
+  <path d="M48 83v119l110.5 47V130z" fill="#b8ccdc"/>
+  <path d="M158.5 130v119L269 202V83z" fill="#98b2c7"/>
+  <path d="M48 83 158.5 130 269 83" stroke="#f4f8fb" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M158.5 38v92" stroke="#f9fbfd" stroke-width="6" stroke-linecap="round"/>
+  <path d="M96 160 125 172l33-14 33 14 30-13" stroke="#f4f8fb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>
+  <path d="M96 191 125 203l33-14 33 14 30-13" stroke="#f4f8fb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+  <path d="M96 222 125 234l33-14 33 14 30-13" stroke="#f4f8fb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+  <path d="M96 67 158.5 93 221 67" stroke="#9fb9ce" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".65"/>
+  <path d="M117 111 158.5 128 200 111" stroke="#7ea0ba" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
 </svg>
