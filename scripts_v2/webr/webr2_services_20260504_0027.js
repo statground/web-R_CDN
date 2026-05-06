@@ -71,8 +71,7 @@ function set_main() {
       <div className="min-h-[calc(100vh-130px)] bg-slate-50">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 md:px-4">
           <header className="border-b border-slate-200 pb-5">
-            <p className="text-sm font-semibold text-teal-700">Web-R</p>
-            <h1 className="mt-1 text-3xl font-bold text-slate-950 sm:text-2xl">Web-R 2.0</h1>
+            <h1 className="text-3xl font-bold text-slate-950 sm:text-2xl">Web-R 2.0</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               브라우저에서 R을 실행하는 WebAssembly 기반 서비스 목록입니다.
             </p>

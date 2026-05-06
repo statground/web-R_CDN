@@ -54,9 +54,6 @@
     const root = document.getElementById("div_main");
     const header_title = "\uB3C4\uC11C";
     const header_subtitle = "";
-    function Div_page_header(props) {
-      return /* @__PURE__ */ React.createElement("div", { class: "flex flex-row w-full justify-start items-end text-start mb-8" }, /* @__PURE__ */ React.createElement("h1", { class: "mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 mr-4 sm:text-3xl" }, /* @__PURE__ */ React.createElement("span", { class: "underline underline-offset-3 decoration-8 decoration-blue-400" }, props.title)), /* @__PURE__ */ React.createElement("p", { class: "text-lg font-normal text-gray-500 sm:text-md pb-2" }, props.subtitle));
-    }
     const SkelLine = ({ w = "100%", h = 12, r = 8, style = {} }) => /* @__PURE__ */ React.createElement("div", { className: "bg-gray-200 animate-pulse", style: { width: w, height: h, borderRadius: r, ...style } });
     const SkelBox = ({ w = "100%", h = 120, r = 12, style = {} }) => /* @__PURE__ */ React.createElement("div", { className: "bg-gray-200 animate-pulse", style: { width: w, height: h, borderRadius: r, ...style } });
     function Div_BookDetailSkeleton() {
@@ -265,9 +262,6 @@
       }
       return cookieValue;
     }
-    function Div_page_header(props) {
-      return /* @__PURE__ */ React.createElement("div", { class: "flex flex-row w-full justify-start items-end text-start mb-8" }, /* @__PURE__ */ React.createElement("h1", { class: "mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 mr-4 sm:text-3xl" }, /* @__PURE__ */ React.createElement("span", { class: "underline underline-offset-3 decoration-8 decoration-blue-400" }, props.title)), /* @__PURE__ */ React.createElement("p", { class: "text-lg font-normal text-gray-500 sm:text-md pb-2" }, props.subtitle));
-    }
     function Div_box_header(props) {
       return /* @__PURE__ */ React.createElement("p", { class: "flex flex-row text-start w-full font-extrabold underline" }, props.title);
     }
@@ -462,9 +456,6 @@
       }
       return cookieValue;
     }
-    function Div_page_header(props) {
-      return /* @__PURE__ */ React.createElement("div", { class: "flex flex-row w-full justify-start items-end text-start mb-8" }, /* @__PURE__ */ React.createElement("h1", { class: "mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 mr-4 sm:text-3xl" }, /* @__PURE__ */ React.createElement("span", { class: "underline underline-offset-3 decoration-8 decoration-blue-400" }, props.title)), /* @__PURE__ */ React.createElement("p", { class: "text-lg font-normal text-gray-500 sm:text-md pb-2" }, props.subtitle));
-    }
     function Div_button() {
       return /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-2 justify-center items-center gap-2 w-full" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => click_btn_submit(), class: "text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300" }, "\uC644\uB8CC"), /* @__PURE__ */ React.createElement("a", { href: initUrl, class: "text-gray-900 text-center bg-white border border-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100" }, "\uBAA9\uB85D\uC73C\uB85C"));
     }
@@ -557,9 +548,6 @@ editor = WebRSolidEdit.mountEditor(document.querySelector("#div_editor"), { heig
         }
       }
       return cookieValue;
-    }
-    function Div_page_header(props) {
-      return /* @__PURE__ */ React.createElement("div", { class: "flex flex-row w-full justify-start items-end text-start mb-8" }, /* @__PURE__ */ React.createElement("h1", { class: "mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 mr-4 sm:text-3xl" }, /* @__PURE__ */ React.createElement("span", { class: "underline underline-offset-3 decoration-8 decoration-blue-400" }, props.title)), /* @__PURE__ */ React.createElement("p", { class: "text-lg font-normal text-gray-500 sm:text-md pb-2" }, props.subtitle));
     }
     function Div_button() {
       return /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-2 justify-center items-center gap-2 w-full" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => click_btn_submit(), class: "text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300" }, "\uC644\uB8CC"), /* @__PURE__ */ React.createElement("a", { href: initUrl, class: "text-gray-900 text-center bg-white border border-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100" }, "\uBAA9\uB85D\uC73C\uB85C"));
