@@ -1,6 +1,3 @@
-function Div_page_header(props) {
-  return /* @__PURE__ */ React.createElement("div", { className: "flex flex-row w-full justify-start items-end text-start mb-8" }, /* @__PURE__ */ React.createElement("h1", { className: "mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 mr-4 sm:text-3xl" }, /* @__PURE__ */ React.createElement("span", { className: "underline underline-offset-3 decoration-8 decoration-blue-400" }, props.title)), props.subtitle ? /* @__PURE__ */ React.createElement("p", { className: "text-lg font-normal text-gray-500 sm:text-md pb-2" }, props.subtitle) : null);
-}
 function getCookieValue(name) {
   if (typeof document === "undefined" || !document.cookie) {
     return "";
