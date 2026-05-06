@@ -79,6 +79,24 @@ const MembershipPage = (() => {
     });
   }
 
+  function teamProducts() {
+    return products.filter(isSeatPriced);
+  }
+
+  function nonTeamProducts() {
+    return products.filter((product) => !isSeatPriced(product));
+  }
+
+  function selectedTeamProduct() {
+    const list = teamProducts();
+    if (selectedProduct && isSeatPriced(selectedProduct)) return selectedProduct;
+    return list[0] || null;
+  }
+
+  function teamOptionLabel(product) {
+    return cleanRole(product && product.team_member_role) === "VIP회원" ? "VIP회원 팀" : "정회원 팀";
+  }
+
   function getQueryValue(name) {
     return new URL(window.location.href).searchParams.get(name) || "";
   }
@@ -216,15 +234,86 @@ const MembershipPage = (() => {
     );
   };
 
+  const TeamMembershipCard = () => {
+    const options = teamProducts();
+    const product = selectedTeamProduct();
+    if (!product) return null;
+    const disabled = !canSelectProduct();
+    const isSelected = selectedProduct && isSeatPriced(selectedProduct);
+    const quantity = normalizeQuantity(product, teamQuantity);
+    const extraMembers = Math.max(quantity - 1, 0);
+
+    return (
+      <div className={"mx-auto flex w-full max-w-lg flex-col items-center justify-center rounded-lg border bg-white p-6 text-center text-gray-900 shadow " + (isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-100")}>
+        <div className="w-full">
+          <h3 className="mb-4 text-2xl font-semibold">기관/팀 회원</h3>
+          <p className="text-md font-light text-gray-500">{product.description}</p>
+          <div className="my-8 flex items-baseline justify-center">
+            <span className="mr-2 text-2xl font-extrabold">￦{money(product.unit_price || product.price)}</span>
+            <span className="text-gray-500">/명/년</span>
+          </div>
+        </div>
+        <fieldset className="mb-6 flex w-full flex-col gap-2 text-left text-sm font-semibold text-slate-700">
+          <legend className="mb-1">팀원 등급</legend>
+          {options.map((option) => (
+            <label key={option.uuid} className={"flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 " + (product.uuid === option.uuid ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700")}>
+              <input
+                type="radio"
+                name="team_member_role"
+                checked={product.uuid === option.uuid}
+                disabled={disabled}
+                onChange={() => selectProduct(option)}
+                className="h-4 w-4"
+              />
+              <span>{teamOptionLabel(option)}</span>
+              <span className="ml-auto text-xs font-normal text-slate-500">￦{money(option.unit_price || option.price)}/명</span>
+            </label>
+          ))}
+        </fieldset>
+        <label className="mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700">
+          추가 팀원 수
+          <input
+            type="number"
+            min="0"
+            max={Math.max((product.max_quantity || 500) - 1, 0)}
+            value={extraMembers}
+            onChange={(event) => {
+              selectedProduct = product;
+              teamQuantity = normalizeQuantity(product, (Math.floor(Number(event.target.value) || 0) + 1));
+              renderMain();
+            }}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-950"
+          />
+          <span className="text-xs font-normal text-slate-500">본인 포함 전체 {quantity}석, 총 {money((product.unit_price || product.price) * quantity)}원</span>
+        </label>
+        {(product.features || []).length > 0 && (
+          <ul role="list" className="mb-8 space-y-4 text-left">
+            {product.features.map((text, i) => (
+              <li key={i} className="flex items-center space-x-3">
+                <span className="h-5 w-5 flex-shrink-0 text-green-500">✓</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button type="button" disabled={disabled} onClick={() => selectProduct(product)}
+          className={disabled ? "mb-2 me-2 w-full cursor-not-allowed rounded-lg bg-gray-400 px-5 py-2.5 text-sm font-medium text-white opacity-60" : "mb-2 me-2 w-full rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300"}>
+          {isSelected ? "선택됨" : "선택"}
+        </button>
+      </div>
+    );
+  };
+
   function Main() {
     return (
       <div className="mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-20 py-8 md:px-8">
         <PageHeader title="정회원 가입" />
-        <div className="grid w-full grid-cols-5 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4">
+        <div className="grid w-full grid-cols-4 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4">
           <div className="flex w-full flex-col items-center justify-center">
             <UserInfoPanel />
           </div>
-          {products.map((product) => <ProductCard key={product.uuid} product={product} />)}
+          {nonTeamProducts().map((product) => <ProductCard key={product.uuid} product={product} />)}
+          <TeamMembershipCard />
         </div>
       </div>
     );

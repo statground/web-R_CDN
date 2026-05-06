@@ -69,6 +69,20 @@ const MembershipPage = /* @__PURE__ */ (() => {
       return String(left.title || "").localeCompare(String(right.title || ""), "ko-KR", { numeric: true, sensitivity: "base" });
     });
   }
+  function teamProducts() {
+    return products.filter(isSeatPriced);
+  }
+  function nonTeamProducts() {
+    return products.filter((product) => !isSeatPriced(product));
+  }
+  function selectedTeamProduct() {
+    const list = teamProducts();
+    if (selectedProduct && isSeatPriced(selectedProduct)) return selectedProduct;
+    return list[0] || null;
+  }
+  function teamOptionLabel(product) {
+    return cleanRole(product && product.team_member_role) === "VIP\uD68C\uC6D0" ? "VIP회원 팀" : "정회원 팀";
+  }
   function getQueryValue(name) {
     return new URL(window.location.href).searchParams.get(name) || "";
   }
@@ -118,8 +132,22 @@ const MembershipPage = /* @__PURE__ */ (() => {
       "\uC120\uD0DD"
     ));
   };
+  const TeamMembershipCard = () => {
+    const options = teamProducts();
+    const product = selectedTeamProduct();
+    if (!product) return null;
+    const disabled = !canSelectProduct();
+    const isSelected = selectedProduct && isSeatPriced(selectedProduct);
+    const quantity = normalizeQuantity(product, teamQuantity);
+    const extraMembers = Math.max(quantity - 1, 0);
+    return /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-lg flex-col items-center justify-center rounded-lg border bg-white p-6 text-center text-gray-900 shadow " + (isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-100") }, /* @__PURE__ */ React.createElement("div", { className: "w-full" }, /* @__PURE__ */ React.createElement("h3", { className: "mb-4 text-2xl font-semibold" }, "기관/팀 회원"), /* @__PURE__ */ React.createElement("p", { className: "text-md font-light text-gray-500" }, product.description), /* @__PURE__ */ React.createElement("div", { className: "my-8 flex items-baseline justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "mr-2 text-2xl font-extrabold" }, "\uFFE6", money(product.unit_price || product.price)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "/\uBA85/\uB144"))), /* @__PURE__ */ React.createElement("fieldset", { className: "mb-6 flex w-full flex-col gap-2 text-left text-sm font-semibold text-slate-700" }, /* @__PURE__ */ React.createElement("legend", { className: "mb-1" }, "\uD300\uC6D0 \uB4F1\uAE09"), options.map((option) => /* @__PURE__ */ React.createElement("label", { key: option.uuid, className: "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 " + (product.uuid === option.uuid ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700") }, /* @__PURE__ */ React.createElement("input", { type: "radio", name: "team_member_role", checked: product.uuid === option.uuid, disabled, onChange: () => selectProduct(option), className: "h-4 w-4" }), /* @__PURE__ */ React.createElement("span", null, teamOptionLabel(option)), /* @__PURE__ */ React.createElement("span", { className: "ml-auto text-xs font-normal text-slate-500" }, "\uFFE6", money(option.unit_price || option.price), "/\uBA85")))), /* @__PURE__ */ React.createElement("label", { className: "mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700" }, "\uCD94\uAC00 \uD300\uC6D0 \uC218", /* @__PURE__ */ React.createElement("input", { type: "number", min: "0", max: Math.max((product.max_quantity || 500) - 1, 0), value: extraMembers, onChange: (event) => {
+      selectedProduct = product;
+      teamQuantity = normalizeQuantity(product, Math.floor(Number(event.target.value) || 0) + 1);
+      renderMain();
+    }, className: "w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-950" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-normal text-slate-500" }, "\uBCF8\uC778 \uD3EC\uD568 \uC804\uCCB4 ", quantity, "\uC11D, \uCD1D ", money((product.unit_price || product.price) * quantity), "\uC6D0")), (product.features || []).length > 0 && /* @__PURE__ */ React.createElement("ul", { role: "list", className: "mb-8 space-y-4 text-left" }, product.features.map((text, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-center space-x-3" }, /* @__PURE__ */ React.createElement("span", { className: "h-5 w-5 flex-shrink-0 text-green-500" }, "\u2713"), /* @__PURE__ */ React.createElement("span", null, text)))), /* @__PURE__ */ React.createElement("button", { type: "button", disabled, onClick: () => selectProduct(product), className: disabled ? "mb-2 me-2 w-full cursor-not-allowed rounded-lg bg-gray-400 px-5 py-2.5 text-sm font-medium text-white opacity-60" : "mb-2 me-2 w-full rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300" }, isSelected ? "\uC120\uD0DD\uB428" : "\uC120\uD0DD"));
+  };
   function Main() {
-    return /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-20 py-8 md:px-8" }, /* @__PURE__ */ React.createElement(PageHeader, { title: "\uC815\uD68C\uC6D0 \uAC00\uC785" }), /* @__PURE__ */ React.createElement("div", { className: "grid w-full grid-cols-5 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex w-full flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement(UserInfoPanel, null)), products.map((product) => /* @__PURE__ */ React.createElement(ProductCard, { key: product.uuid, product }))));
+    return /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-20 py-8 md:px-8" }, /* @__PURE__ */ React.createElement(PageHeader, { title: "\uC815\uD68C\uC6D0 \uAC00\uC785" }), /* @__PURE__ */ React.createElement("div", { className: "grid w-full grid-cols-4 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex w-full flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement(UserInfoPanel, null)), nonTeamProducts().map((product) => /* @__PURE__ */ React.createElement(ProductCard, { key: product.uuid, product })), /* @__PURE__ */ React.createElement(TeamMembershipCard, null)));
   }
   function renderMain() {
     ReactDOM.render(/* @__PURE__ */ React.createElement(Main, null), document.getElementById("div_main"));
