@@ -1158,6 +1158,7 @@ function MyInfoApp() {
         { key: "comments", label: "내가 쓴 댓글" },
         { key: "payments", label: "결제 내역" },
         { key: "connection", label: "계정 활동" },
+        { key: "team", label: "기관/팀 관리", href: "/account/team/" },
       ],
     },
     {
@@ -1172,7 +1173,7 @@ function MyInfoApp() {
   ];
   const menuItems = menuGroups.flatMap((group) => group.items);
   const initialKey = (window.location.hash || "#overview").replace("#", "");
-  const [active, setActive] = React.useState(menuItems.some((item) => item.key === initialKey) ? initialKey : "overview");
+  const [active, setActive] = React.useState(menuItems.some((item) => item.key === initialKey && !item.href) ? initialKey : "overview");
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [dataLoading, setDataLoading] = React.useState({
@@ -1229,7 +1230,7 @@ function MyInfoApp() {
     load();
     const onHash = () => {
       const key = (window.location.hash || "#overview").replace("#", "");
-      if (menuItems.some((item) => item.key === key)) setActive(key);
+      if (menuItems.some((item) => item.key === key && !item.href)) setActive(key);
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -1277,6 +1278,17 @@ function MyInfoApp() {
                 <div className="px-3 pb-2 text-xs font-bold uppercase tracking-normal text-slate-400">{group.title}</div>
                 {group.items.map((item) => {
                   const selected = item.key === active;
+                  if (item.href) {
+                    return (
+                      <a
+                        key={item.key}
+                        href={item.href}
+                        className="block w-full rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        {item.label}
+                      </a>
+                    );
+                  }
                   return (
                     <button
                       key={item.key}

@@ -846,7 +846,8 @@ function MyInfoApp() {
         { key: "articles", label: "\uB0B4\uAC00 \uC4F4 \uAE00" },
         { key: "comments", label: "\uB0B4\uAC00 \uC4F4 \uB313\uAE00" },
         { key: "payments", label: "\uACB0\uC81C \uB0B4\uC5ED" },
-        { key: "connection", label: "\uACC4\uC815 \uD65C\uB3D9" }
+        { key: "connection", label: "\uACC4\uC815 \uD65C\uB3D9" },
+        { key: "team", label: "\uAE30\uAD00/\uD300 \uAD00\uB9AC", href: "/account/team/" }
       ]
     },
     {
@@ -861,7 +862,7 @@ function MyInfoApp() {
   ];
   const menuItems = menuGroups.flatMap((group) => group.items);
   const initialKey = (window.location.hash || "#overview").replace("#", "");
-  const [active, setActive] = React.useState(menuItems.some((item) => item.key === initialKey) ? initialKey : "overview");
+  const [active, setActive] = React.useState(menuItems.some((item) => item.key === initialKey && !item.href) ? initialKey : "overview");
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [dataLoading, setDataLoading] = React.useState({
@@ -912,7 +913,7 @@ function MyInfoApp() {
     load();
     const onHash = () => {
       const key = (window.location.hash || "#overview").replace("#", "");
-      if (menuItems.some((item) => item.key === key))
+      if (menuItems.some((item) => item.key === key && !item.href))
         setActive(key);
     };
     window.addEventListener("hashchange", onHash);
@@ -948,6 +949,9 @@ function MyInfoApp() {
     /* @__PURE__ */ React.createElement("span", { "aria-hidden": "true" }, menuOpen ? "-" : "+")
   ), /* @__PURE__ */ React.createElement("nav", { id: "myinfo-account-menu", className: `${menuOpen ? "block" : "block md:hidden"} space-y-5 md:mt-3` }, menuGroups.map((group) => /* @__PURE__ */ React.createElement("section", { key: group.title, className: "space-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "px-3 pb-2 text-xs font-bold uppercase tracking-normal text-slate-400" }, group.title), group.items.map((item) => {
     const selected = item.key === active;
+    if (item.href) {
+      return /* @__PURE__ */ React.createElement("a", { key: item.key, href: item.href, className: "block w-full rounded-lg px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100" }, item.label);
+    }
     return /* @__PURE__ */ React.createElement(
       "button",
       {

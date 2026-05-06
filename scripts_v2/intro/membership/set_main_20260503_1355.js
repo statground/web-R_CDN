@@ -2,11 +2,12 @@ const MembershipPage = (() => {
   let userinfo = null;
   let products = [];
   let selectedProduct = null;
+  let teamQuantity = 1;
   let busyKey = "";
 
   const money = (n) => (Number(n) || 0).toLocaleString("ko-KR");
   const cleanRole = (role) => String(role || "").replace(/\s+/g, "");
-  const paidRoles = ["정회원", "VIP회원", "기관회원", "기업회원"];
+  const paidRoles = ["정회원", "VIP회원", "기관회원", "기관/팀회원", "기업회원"];
   const noExpiryRoles = ["준회원", "게스트", "관리자"];
 
   function canSelectProduct() {
@@ -38,6 +39,23 @@ const MembershipPage = (() => {
     const next = new Date(base.getTime());
     next.setDate(next.getDate() + grantDays);
     return next;
+  }
+
+  function isSeatPriced(product) {
+    return !!(product && product.seat_priced);
+  }
+
+  function normalizeQuantity(product, value) {
+    const min = Number(product && product.min_quantity) || 1;
+    const max = Number(product && product.max_quantity) || 500;
+    const parsed = Math.floor(Number(value) || min);
+    return Math.max(min, Math.min(max, parsed));
+  }
+
+  function displayAmount(product) {
+    if (!product) return 0;
+    if (!isSeatPriced(product)) return Number(product.price) || 0;
+    return (Number(product.unit_price || product.price) || 0) * normalizeQuantity(product, teamQuantity);
   }
 
   function getQueryValue(name) {
@@ -96,7 +114,8 @@ const MembershipPage = (() => {
         <p className="text-sm">가입 일자: {userinfo.date_joined}</p>
         {showCurrentExpiry && <p className="text-sm">회원등급 만료일: {userinfo.expired_at}</p>}
         {selectedProduct && <p className="text-sm font-extrabold text-red-700">예상 만료일: {nextExpiry}</p>}
-        {selectedProduct && <p className="text-sm font-extrabold text-red-700">예상 결제 금액: {money(selectedProduct.price)}원</p>}
+        {selectedProduct && isSeatPriced(selectedProduct) && <p className="text-sm font-extrabold text-red-700">전체 좌석(본인 포함): {normalizeQuantity(selectedProduct, teamQuantity)}명</p>}
+        {selectedProduct && <p className="text-sm font-extrabold text-red-700">예상 결제 금액: {money(displayAmount(selectedProduct))}원</p>}
         <div className="py-4"></div>
         <PaymentButtons />
       </div>
@@ -129,10 +148,28 @@ const MembershipPage = (() => {
           <h3 className="mb-4 text-2xl font-semibold">{product.title}</h3>
           <p className="text-md font-light text-gray-500">{product.description}</p>
           <div className="my-8 flex items-baseline justify-center">
-            <span className="mr-2 text-2xl font-extrabold">￦{money(product.price)}</span>
-            <span className="text-gray-500">/년</span>
+            <span className="mr-2 text-2xl font-extrabold">￦{money(product.unit_price || product.price)}</span>
+            <span className="text-gray-500">{isSeatPriced(product) ? "/명/년" : "/년"}</span>
           </div>
         </div>
+        {isSeatPriced(product) && (
+          <label className="mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700">
+            전체 좌석(본인 포함)
+            <input
+              type="number"
+              min={product.min_quantity || 1}
+              max={product.max_quantity || 500}
+              value={isSelected ? teamQuantity : (product.quantity || 1)}
+              onChange={(event) => {
+                teamQuantity = normalizeQuantity(product, event.target.value);
+                selectedProduct = product;
+                renderMain();
+              }}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-950"
+            />
+            <span className="text-xs font-normal text-slate-500">추가 팀원 {Math.max(normalizeQuantity(product, isSelected ? teamQuantity : (product.quantity || 1)) - 1, 0)}명까지, 총 {money((product.unit_price || product.price) * normalizeQuantity(product, isSelected ? teamQuantity : (product.quantity || 1)))}원</span>
+          </label>
+        )}
         {(product.features || []).length > 0 && (
           <ul role="list" className="mb-8 space-y-4 text-left">
             {product.features.map((text, i) => (
@@ -171,6 +208,9 @@ const MembershipPage = (() => {
 
   function selectProduct(product) {
     selectedProduct = product;
+    if (isSeatPriced(product)) {
+      teamQuantity = normalizeQuantity(product, teamQuantity || product.quantity || 1);
+    }
     renderMain();
   }
 
@@ -199,7 +239,12 @@ const MembershipPage = (() => {
     renderMain();
     try {
       const resultURL = window.location.origin + "/intro/membership/result/";
-      const query = new URLSearchParams({ product_id: product.uuid, type: "membership", method: method });
+      const query = new URLSearchParams({
+        product_id: product.uuid,
+        type: "membership",
+        method: method,
+        quantity: isSeatPriced(product) ? String(normalizeQuantity(product, teamQuantity)) : "1",
+      });
       const tempdata = await fetch("/ajax_request_order_id/?" + query.toString()).then((res) => res.json());
       if (tempdata.error) {
         alert(tempdata.message || "결제 요청을 준비할 수 없습니다.");
