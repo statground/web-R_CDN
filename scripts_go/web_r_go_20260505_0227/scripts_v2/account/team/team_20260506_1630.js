@@ -112,10 +112,11 @@ const AccountTeamPage = (() => {
   function ManageView({ data }) {
     const team = data.team || {};
     return h("div", { className: "space-y-6" },
-      h("div", { className: "grid grid-cols-4 gap-4 md:grid-cols-2 sm:grid-cols-1" },
+      h("div", { className: "grid grid-cols-5 gap-4 md:grid-cols-2 sm:grid-cols-1" },
         statCard("전체 좌석", team.seat_limit || 0),
         statCard("사용 좌석", `${team.seat_used || 0} (본인 포함)`),
         statCard("남은 좌석", team.remaining || 0),
+        statCard("팀원 등급", team.member_role_name || "정회원"),
         statCard("만료일", team.expires_at || "-")),
       h("form", { className: "rounded-lg border border-slate-200 bg-white p-5 shadow-sm", onSubmit: updateTeam },
         h("label", { className: "mb-2 block text-sm font-bold text-slate-700" }, "팀 이름"),

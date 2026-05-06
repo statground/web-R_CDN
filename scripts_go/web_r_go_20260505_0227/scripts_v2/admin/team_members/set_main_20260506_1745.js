@@ -69,6 +69,7 @@ function TeamMembersApp(props) {
       const members = Array.isArray(team.members) ? team.members : [];
       const haystack = [
         team.team_name,
+        team.member_role_name,
         team.owner_email,
         team.owner_nickname,
         team.owner_realname
@@ -108,11 +109,13 @@ function TeamMembersApp(props) {
           ),
           React.createElement("div", { className: "flex flex-wrap gap-2 text-sm" },
             React.createElement("span", { className: "rounded-md border border-slate-200 bg-slate-50 px-3 py-1" }, "좌석 ", teamAdminFormatNumber(team.seat_used), " / ", teamAdminFormatNumber(team.seat_limit)),
+            React.createElement("span", { className: "rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1 text-indigo-700" }, "팀원 등급 ", team.member_role_name || "정회원"),
             React.createElement("span", { className: "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700" }, "잔여 ", teamAdminFormatNumber(team.remaining)),
             React.createElement("span", { className: "rounded-md border border-slate-200 bg-slate-50 px-3 py-1" }, "만료 ", teamAdminDateOnly(team.expires_at) || "-")
           )
         ),
-        React.createElement("div", { className: "grid grid-cols-4 gap-3 md:grid-cols-2" },
+        React.createElement("div", { className: "grid grid-cols-5 gap-3 md:grid-cols-2" },
+          React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "팀원 등급"), React.createElement("p", { className: "text-lg font-bold" }, team.member_role_name || "정회원")),
           React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "구매 좌석"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminFormatNumber(team.ledger_seats), "석")),
           React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "결제 합계"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminMoney(team.ledger_amount))),
           React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "팀원 수"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminFormatNumber(team.active_member_count), "명")),
@@ -150,6 +153,8 @@ function TeamMembersApp(props) {
             ),
             React.createElement("dl", { className: "grid grid-cols-5 w-full md:grid-cols-1 gap-8 p-4 mx-auto text-gray-900 md:p-8" },
               React.createElement(TeamMetric, { title: "팀 수", value: teamAdminFormatNumber(summary.team_count) + "팀" }),
+              React.createElement(TeamMetric, { title: "정회원 팀", value: teamAdminFormatNumber(summary.regular_team_total) + "팀" }),
+              React.createElement(TeamMetric, { title: "VIP회원 팀", value: teamAdminFormatNumber(summary.vip_team_total) + "팀" }),
               React.createElement(TeamMetric, { title: "총 좌석", value: teamAdminFormatNumber(summary.seat_limit_total) + "석" }),
               React.createElement(TeamMetric, { title: "사용 좌석", value: teamAdminFormatNumber(summary.seat_used_total) + "석" }),
               React.createElement(TeamMetric, { title: "잔여 좌석", value: teamAdminFormatNumber(summary.remaining_total) + "석" }),

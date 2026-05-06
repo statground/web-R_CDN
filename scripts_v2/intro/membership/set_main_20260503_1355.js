@@ -62,6 +62,11 @@ const MembershipPage = (() => {
     const title = cleanRole(product && product.title);
     if (title === "정회원") return 10;
     if (title === "VIP회원") return 20;
+    if (isSeatPriced(product)) {
+      const teamRole = cleanRole(product && product.team_member_role);
+      if (teamRole === "VIP회원") return 91;
+      return 90;
+    }
     if (title === "기관회원" || title === "기관/팀회원" || title === "기업회원" || isSeatPriced(product)) return 90;
     return 50;
   }
@@ -177,6 +182,7 @@ const MembershipPage = (() => {
         </div>
         {isSeatPriced(product) && (
           <label className="mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700">
+            <span>팀원 등급: {product.team_member_role || "정회원"}</span>
             추가 팀원 수
             <input
               type="number"
@@ -212,9 +218,9 @@ const MembershipPage = (() => {
 
   function Main() {
     return (
-      <div className="mx-auto flex w-full max-w-screen-sm flex-col items-center justify-center px-20 py-8 md:px-8">
+      <div className="mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-20 py-8 md:px-8">
         <PageHeader title="정회원 가입" />
-        <div className="grid w-full grid-cols-4 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4">
+        <div className="grid w-full grid-cols-5 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4">
           <div className="flex w-full flex-col items-center justify-center">
             <UserInfoPanel />
           </div>

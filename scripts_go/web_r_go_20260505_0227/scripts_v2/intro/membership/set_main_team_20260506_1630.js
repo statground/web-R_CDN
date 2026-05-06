@@ -30,6 +30,11 @@ const MembershipPage = (() => {
     const title = cleanRole(product && product.title);
     if (title === "\uC815\uD68C\uC6D0") return 10;
     if (title === "VIP\uD68C\uC6D0") return 20;
+    if (isSeatPriced(product)) {
+      const teamRole = cleanRole(product && product.team_member_role);
+      if (teamRole === "VIP\uD68C\uC6D0") return 91;
+      return 90;
+    }
     if (title === "\uAE30\uAD00\uD68C\uC6D0" || title === "\uAE30\uAD00/\uD300\uD68C\uC6D0" || title === "\uAE30\uC5C5\uD68C\uC6D0" || isSeatPriced(product)) return 90;
     return 50;
   }
@@ -122,6 +127,7 @@ const MembershipPage = (() => {
           h("span", { className: "mr-2 text-2xl font-extrabold" }, "￦", money(product.unit_price || product.price)),
           h("span", { className: "text-gray-500" }, isSeatPriced(product) ? "/명/년" : "/년"))),
       isSeatPriced(product) ? h("label", { className: "mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700" },
+        h("span", null, "팀원 등급: ", product.team_member_role || "정회원"),
         "추가 팀원 수",
         h("input", {
           type: "number",
@@ -147,9 +153,9 @@ const MembershipPage = (() => {
       }, "선택"));
   };
   function Main() {
-    return h("div", { className: "mx-auto flex w-full max-w-screen-sm flex-col items-center justify-center px-20 py-8 md:px-8" },
+    return h("div", { className: "mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-20 py-8 md:px-8" },
       h(PageHeader, { title: "정회원 가입" }),
-      h("div", { className: "grid w-full grid-cols-4 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4" },
+      h("div", { className: "grid w-full grid-cols-5 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4" },
         h("div", { className: "flex w-full flex-col items-center justify-center" }, h(UserInfoPanel)),
         products.map((product) => h(ProductCard, { key: product.uuid, product }))));
   }
