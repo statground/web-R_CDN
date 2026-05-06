@@ -26,6 +26,20 @@ const MembershipPage = (() => {
     if (!isSeatPriced(product)) return Number(product.price) || 0;
     return (Number(product.unit_price || product.price) || 0) * normalizeQuantity(product, teamQuantity);
   }
+  function membershipSortRank(product) {
+    const title = cleanRole(product && product.title);
+    if (title === "\uC815\uD68C\uC6D0") return 10;
+    if (title === "VIP\uD68C\uC6D0") return 20;
+    if (title === "\uAE30\uAD00\uD68C\uC6D0" || title === "\uAE30\uAD00/\uD300\uD68C\uC6D0" || title === "\uAE30\uC5C5\uD68C\uC6D0" || isSeatPriced(product)) return 90;
+    return 50;
+  }
+  function sortProducts(list) {
+    return [...(Array.isArray(list) ? list : [])].sort((left, right) => {
+      const rankDiff = membershipSortRank(left) - membershipSortRank(right);
+      if (rankDiff !== 0) return rankDiff;
+      return String(left.title || "").localeCompare(String(right.title || ""), "ko-KR", { numeric: true, sensitivity: "base" });
+    });
+  }
   function parseDateTime(value) {
     if (!value) return null;
     const text = String(value).trim();
@@ -88,7 +102,9 @@ const MembershipPage = (() => {
       h("p", { className: "text-sm" }, "가입 일자: ", userinfo.date_joined),
       showCurrentExpiry ? h("p", { className: "text-sm" }, "회원등급 만료일: ", userinfo.expired_at) : null,
       selectedProduct ? h("p", { className: "text-sm font-extrabold text-red-700" }, "예상 만료일: ", nextExpiry) : null,
-      selectedProduct && isSeatPriced(selectedProduct) ? h("p", { className: "text-sm font-extrabold text-red-700" }, "전체 좌석(본인 포함): ", normalizeQuantity(selectedProduct, teamQuantity), "명") : null,
+      selectedProduct && isSeatPriced(selectedProduct) ? h(React.Fragment, null,
+        h("p", { className: "text-sm font-extrabold text-red-700" }, "추가 팀원: ", Math.max(normalizeQuantity(selectedProduct, teamQuantity) - 1, 0), "명"),
+        h("p", { className: "text-sm font-extrabold text-red-700" }, "전체 좌석(본인 포함): ", normalizeQuantity(selectedProduct, teamQuantity), "석")) : null,
       selectedProduct ? h("p", { className: "text-sm font-extrabold text-red-700" }, "예상 결제 금액: ", money(displayAmount(selectedProduct)), "원") : null,
       h("div", { className: "py-4" }),
       h(PaymentButtons));
@@ -96,7 +112,8 @@ const MembershipPage = (() => {
   const ProductCard = ({ product }) => {
     const disabled = !canSelectProduct();
     const isSelected = selectedProduct && selectedProduct.uuid === product.uuid;
-    const quantity = normalizeQuantity(product, isSelected ? teamQuantity : product.quantity || 1);
+    const quantity = normalizeQuantity(product, isSeatPriced(product) ? teamQuantity : product.quantity || 1);
+    const extraMembers = Math.max(quantity - 1, 0);
     return h("div", { className: "mx-auto flex w-full max-w-lg flex-col items-center justify-center rounded-lg border bg-white p-6 text-center text-gray-900 shadow " + (isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-100") },
       h("div", { className: "w-full" },
         h("h3", { className: "mb-4 text-2xl font-semibold" }, product.title),
@@ -105,20 +122,19 @@ const MembershipPage = (() => {
           h("span", { className: "mr-2 text-2xl font-extrabold" }, "￦", money(product.unit_price || product.price)),
           h("span", { className: "text-gray-500" }, isSeatPriced(product) ? "/명/년" : "/년"))),
       isSeatPriced(product) ? h("label", { className: "mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700" },
-        "전체 좌석(본인 포함)",
+        "추가 팀원 수",
         h("input", {
           type: "number",
-          min: product.min_quantity || 1,
-          max: product.max_quantity || 500,
-          value: quantity,
+          min: "0",
+          max: Math.max((product.max_quantity || 500) - 1, 0),
+          value: extraMembers,
           onChange: (event) => {
-            teamQuantity = normalizeQuantity(product, event.target.value);
-            selectedProduct = product;
+            teamQuantity = normalizeQuantity(product, Math.floor(Number(event.target.value) || 0) + 1);
             renderMain();
           },
           className: "w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-950"
         }),
-        h("span", { className: "text-xs font-normal text-slate-500" }, "추가 팀원 ", Math.max(quantity - 1, 0), "명까지, 총 ", money((product.unit_price || product.price) * quantity), "원")) : null,
+        h("span", { className: "text-xs font-normal text-slate-500" }, "본인 포함 전체 ", quantity, "석, 총 ", money((product.unit_price || product.price) * quantity), "원")) : null,
       (product.features || []).length > 0 ? h("ul", { role: "list", className: "mb-8 space-y-4 text-left" },
         product.features.map((text, i) => h("li", { key: i, className: "flex items-center space-x-3" },
           h("span", { className: "h-5 w-5 flex-shrink-0 text-green-500" }, "✓"),
@@ -154,7 +170,7 @@ const MembershipPage = (() => {
       alert(productData.message || "상품 정보를 불러올 수 없습니다.");
       products = [];
     } else {
-      products = productData.products || [];
+      products = sortProducts(productData.products);
     }
     if (window.gv_username !== "") {
       userinfo = await fetch("/account/ajax_get_userinfo/").then((res) => res.json());

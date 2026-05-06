@@ -58,6 +58,22 @@ const MembershipPage = (() => {
     return (Number(product.unit_price || product.price) || 0) * normalizeQuantity(product, teamQuantity);
   }
 
+  function membershipSortRank(product) {
+    const title = cleanRole(product && product.title);
+    if (title === "정회원") return 10;
+    if (title === "VIP회원") return 20;
+    if (title === "기관회원" || title === "기관/팀회원" || title === "기업회원" || isSeatPriced(product)) return 90;
+    return 50;
+  }
+
+  function sortProducts(list) {
+    return [...(Array.isArray(list) ? list : [])].sort((left, right) => {
+      const rankDiff = membershipSortRank(left) - membershipSortRank(right);
+      if (rankDiff !== 0) return rankDiff;
+      return String(left.title || "").localeCompare(String(right.title || ""), "ko-KR", { numeric: true, sensitivity: "base" });
+    });
+  }
+
   function getQueryValue(name) {
     return new URL(window.location.href).searchParams.get(name) || "";
   }
@@ -114,7 +130,12 @@ const MembershipPage = (() => {
         <p className="text-sm">가입 일자: {userinfo.date_joined}</p>
         {showCurrentExpiry && <p className="text-sm">회원등급 만료일: {userinfo.expired_at}</p>}
         {selectedProduct && <p className="text-sm font-extrabold text-red-700">예상 만료일: {nextExpiry}</p>}
-        {selectedProduct && isSeatPriced(selectedProduct) && <p className="text-sm font-extrabold text-red-700">전체 좌석(본인 포함): {normalizeQuantity(selectedProduct, teamQuantity)}명</p>}
+        {selectedProduct && isSeatPriced(selectedProduct) && (
+          <>
+            <p className="text-sm font-extrabold text-red-700">추가 팀원: {Math.max(normalizeQuantity(selectedProduct, teamQuantity) - 1, 0)}명</p>
+            <p className="text-sm font-extrabold text-red-700">전체 좌석(본인 포함): {normalizeQuantity(selectedProduct, teamQuantity)}석</p>
+          </>
+        )}
         {selectedProduct && <p className="text-sm font-extrabold text-red-700">예상 결제 금액: {money(displayAmount(selectedProduct))}원</p>}
         <div className="py-4"></div>
         <PaymentButtons />
@@ -142,6 +163,8 @@ const MembershipPage = (() => {
   const ProductCard = ({ product }) => {
     const disabled = !canSelectProduct();
     const isSelected = selectedProduct && selectedProduct.uuid === product.uuid;
+    const quantity = normalizeQuantity(product, isSeatPriced(product) ? teamQuantity : (product.quantity || 1));
+    const extraMembers = Math.max(quantity - 1, 0);
     return (
       <div className={"mx-auto flex w-full max-w-lg flex-col items-center justify-center rounded-lg border bg-white p-6 text-center text-gray-900 shadow " + (isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-100")}>
         <div className="w-full">
@@ -154,20 +177,19 @@ const MembershipPage = (() => {
         </div>
         {isSeatPriced(product) && (
           <label className="mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700">
-            전체 좌석(본인 포함)
+            추가 팀원 수
             <input
               type="number"
-              min={product.min_quantity || 1}
-              max={product.max_quantity || 500}
-              value={isSelected ? teamQuantity : (product.quantity || 1)}
+              min="0"
+              max={Math.max((product.max_quantity || 500) - 1, 0)}
+              value={extraMembers}
               onChange={(event) => {
-                teamQuantity = normalizeQuantity(product, event.target.value);
-                selectedProduct = product;
+                teamQuantity = normalizeQuantity(product, (Math.floor(Number(event.target.value) || 0) + 1));
                 renderMain();
               }}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-950"
             />
-            <span className="text-xs font-normal text-slate-500">추가 팀원 {Math.max(normalizeQuantity(product, isSelected ? teamQuantity : (product.quantity || 1)) - 1, 0)}명까지, 총 {money((product.unit_price || product.price) * normalizeQuantity(product, isSelected ? teamQuantity : (product.quantity || 1)))}원</span>
+            <span className="text-xs font-normal text-slate-500">본인 포함 전체 {quantity}석, 총 {money((product.unit_price || product.price) * quantity)}원</span>
           </label>
         )}
         {(product.features || []).length > 0 && (
@@ -221,7 +243,7 @@ const MembershipPage = (() => {
       alert(productData.message || "상품 정보를 불러올 수 없습니다.");
       products = [];
     } else {
-      products = productData.products || [];
+      products = sortProducts(productData.products);
     }
 
     if (window.gv_username !== "") {

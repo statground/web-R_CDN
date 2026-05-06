@@ -2,10 +2,11 @@ const MembershipPage = /* @__PURE__ */ (() => {
   let userinfo = null;
   let products = [];
   let selectedProduct = null;
+  let teamQuantity = 1;
   let busyKey = "";
   const money = (n) => (Number(n) || 0).toLocaleString("ko-KR");
   const cleanRole = (role) => String(role || "").replace(/\s+/g, "");
-  const paidRoles = ["\uC815\uD68C\uC6D0", "VIP\uD68C\uC6D0", "\uAE30\uAD00\uD68C\uC6D0", "\uAE30\uC5C5\uD68C\uC6D0"];
+  const paidRoles = ["\uC815\uD68C\uC6D0", "VIP\uD68C\uC6D0", "\uAE30\uAD00\uD68C\uC6D0", "\uAE30\uAD00/\uD300\uD68C\uC6D0", "\uAE30\uC5C5\uD68C\uC6D0"];
   const noExpiryRoles = ["\uC900\uD68C\uC6D0", "\uAC8C\uC2A4\uD2B8", "\uAD00\uB9AC\uC790"];
   function canSelectProduct() {
     return userinfo != null && cleanRole(userinfo.role) !== "\uAD00\uB9AC\uC790";
@@ -35,6 +36,34 @@ const MembershipPage = /* @__PURE__ */ (() => {
     next.setDate(next.getDate() + grantDays);
     return next;
   }
+  function isSeatPriced(product) {
+    return !!(product && product.seat_priced);
+  }
+  function normalizeQuantity(product, value) {
+    const min = Number(product && product.min_quantity) || 1;
+    const max = Number(product && product.max_quantity) || 500;
+    const parsed = Math.floor(Number(value) || min);
+    return Math.max(min, Math.min(max, parsed));
+  }
+  function displayAmount(product) {
+    if (!product) return 0;
+    if (!isSeatPriced(product)) return Number(product.price) || 0;
+    return (Number(product.unit_price || product.price) || 0) * normalizeQuantity(product, teamQuantity);
+  }
+  function membershipSortRank(product) {
+    const title = cleanRole(product && product.title);
+    if (title === "\uC815\uD68C\uC6D0") return 10;
+    if (title === "VIP\uD68C\uC6D0") return 20;
+    if (title === "\uAE30\uAD00\uD68C\uC6D0" || title === "\uAE30\uAD00/\uD300\uD68C\uC6D0" || title === "\uAE30\uC5C5\uD68C\uC6D0" || isSeatPriced(product)) return 90;
+    return 50;
+  }
+  function sortProducts(list) {
+    return [...(Array.isArray(list) ? list : [])].sort((left, right) => {
+      const rankDiff = membershipSortRank(left) - membershipSortRank(right);
+      if (rankDiff !== 0) return rankDiff;
+      return String(left.title || "").localeCompare(String(right.title || ""), "ko-KR", { numeric: true, sensitivity: "base" });
+    });
+  }
   function getQueryValue(name) {
     return new URL(window.location.href).searchParams.get(name) || "";
   }
@@ -53,7 +82,7 @@ const MembershipPage = /* @__PURE__ */ (() => {
     const role = cleanRole(userinfo.role);
     const showCurrentExpiry = !noExpiryRoles.includes(role) && userinfo.expired_at;
     const nextExpiry = selectedProduct ? formatDateTime(expectedExpiredAt(selectedProduct)) : "";
-    return /* @__PURE__ */ React.createElement("div", { className: "flex w-full flex-col items-center justify-center space-y-2 rounded-xl border border-blue-100 bg-gray-100 px-4 py-8" }, /* @__PURE__ */ React.createElement("p", { className: "font-extrabold underline" }, "\uD68C\uC6D0 \uC815\uBCF4"), /* @__PURE__ */ React.createElement("div", { className: "py-1" }), /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, userinfo.email), /* @__PURE__ */ React.createElement("p", { className: "text-2xl font-extrabold" }, userinfo.name), /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, userinfo.realname, "\u3000|\u3000", userinfo.gender), /* @__PURE__ */ React.createElement("div", { className: "py-4" }), /* @__PURE__ */ React.createElement("p", { className: "text-lg font-extrabold" }, selectedProduct && userinfo.role !== selectedProduct.title ? /* @__PURE__ */ React.createElement(React.Fragment, null, userinfo.role, " \u2192 ", /* @__PURE__ */ React.createElement("span", { className: "text-green-700" }, selectedProduct.title)) : selectedProduct ? /* @__PURE__ */ React.createElement("span", { className: "text-green-700" }, selectedProduct.title) : userinfo.role), /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, "\uAC00\uC785 \uC77C\uC790: ", userinfo.date_joined), showCurrentExpiry && /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, "\uD68C\uC6D0\uB4F1\uAE09 \uB9CC\uB8CC\uC77C: ", userinfo.expired_at), selectedProduct && /* @__PURE__ */ React.createElement("p", { className: "text-sm font-extrabold text-red-700" }, "\uC608\uC0C1 \uB9CC\uB8CC\uC77C: ", nextExpiry), selectedProduct && /* @__PURE__ */ React.createElement("p", { className: "text-sm font-extrabold text-red-700" }, "\uC608\uC0C1 \uACB0\uC81C \uAE08\uC561: ", money(selectedProduct.price), "\uC6D0"), /* @__PURE__ */ React.createElement("div", { className: "py-4" }), /* @__PURE__ */ React.createElement(PaymentButtons, null));
+    return /* @__PURE__ */ React.createElement("div", { className: "flex w-full flex-col items-center justify-center space-y-2 rounded-xl border border-blue-100 bg-gray-100 px-4 py-8" }, /* @__PURE__ */ React.createElement("p", { className: "font-extrabold underline" }, "\uD68C\uC6D0 \uC815\uBCF4"), /* @__PURE__ */ React.createElement("div", { className: "py-1" }), /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, userinfo.email), /* @__PURE__ */ React.createElement("p", { className: "text-2xl font-extrabold" }, userinfo.name), /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, userinfo.realname, "\u3000|\u3000", userinfo.gender), /* @__PURE__ */ React.createElement("div", { className: "py-4" }), /* @__PURE__ */ React.createElement("p", { className: "text-lg font-extrabold" }, selectedProduct && userinfo.role !== selectedProduct.title ? /* @__PURE__ */ React.createElement(React.Fragment, null, userinfo.role, " \u2192 ", /* @__PURE__ */ React.createElement("span", { className: "text-green-700" }, selectedProduct.title)) : selectedProduct ? /* @__PURE__ */ React.createElement("span", { className: "text-green-700" }, selectedProduct.title) : userinfo.role), /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, "\uAC00\uC785 \uC77C\uC790: ", userinfo.date_joined), showCurrentExpiry && /* @__PURE__ */ React.createElement("p", { className: "text-sm" }, "\uD68C\uC6D0\uB4F1\uAE09 \uB9CC\uB8CC\uC77C: ", userinfo.expired_at), selectedProduct && /* @__PURE__ */ React.createElement("p", { className: "text-sm font-extrabold text-red-700" }, "\uC608\uC0C1 \uB9CC\uB8CC\uC77C: ", nextExpiry), selectedProduct && isSeatPriced(selectedProduct) && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", { className: "text-sm font-extrabold text-red-700" }, "\uCD94\uAC00 \uD300\uC6D0: ", Math.max(normalizeQuantity(selectedProduct, teamQuantity) - 1, 0), "\uBA85"), /* @__PURE__ */ React.createElement("p", { className: "text-sm font-extrabold text-red-700" }, "\uC804\uCCB4 \uC88C\uC11D(\uBCF8\uC778 \uD3EC\uD568): ", normalizeQuantity(selectedProduct, teamQuantity), "\uC11D")), selectedProduct && /* @__PURE__ */ React.createElement("p", { className: "text-sm font-extrabold text-red-700" }, "\uC608\uC0C1 \uACB0\uC81C \uAE08\uC561: ", money(displayAmount(selectedProduct)), "\uC6D0"), /* @__PURE__ */ React.createElement("div", { className: "py-4" }), /* @__PURE__ */ React.createElement(PaymentButtons, null));
   };
   const PaymentButtons = () => {
     if (!userinfo)
@@ -68,7 +97,12 @@ const MembershipPage = /* @__PURE__ */ (() => {
   const ProductCard = ({ product }) => {
     const disabled = !canSelectProduct();
     const isSelected = selectedProduct && selectedProduct.uuid === product.uuid;
-    return /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-lg flex-col items-center justify-center rounded-lg border bg-white p-6 text-center text-gray-900 shadow " + (isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-100") }, /* @__PURE__ */ React.createElement("div", { className: "w-full" }, /* @__PURE__ */ React.createElement("h3", { className: "mb-4 text-2xl font-semibold" }, product.title), /* @__PURE__ */ React.createElement("p", { className: "text-md font-light text-gray-500" }, product.description), /* @__PURE__ */ React.createElement("div", { className: "my-8 flex items-baseline justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "mr-2 text-2xl font-extrabold" }, "\uFFE6", money(product.price)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "/\uB144"))), (product.features || []).length > 0 && /* @__PURE__ */ React.createElement("ul", { role: "list", className: "mb-8 space-y-4 text-left" }, product.features.map((text, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-center space-x-3" }, /* @__PURE__ */ React.createElement("span", { className: "h-5 w-5 flex-shrink-0 text-green-500" }, "\u2713"), /* @__PURE__ */ React.createElement("span", null, text)))), /* @__PURE__ */ React.createElement(
+    const quantity = normalizeQuantity(product, isSeatPriced(product) ? teamQuantity : product.quantity || 1);
+    const extraMembers = Math.max(quantity - 1, 0);
+    return /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-lg flex-col items-center justify-center rounded-lg border bg-white p-6 text-center text-gray-900 shadow " + (isSelected ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-100") }, /* @__PURE__ */ React.createElement("div", { className: "w-full" }, /* @__PURE__ */ React.createElement("h3", { className: "mb-4 text-2xl font-semibold" }, product.title), /* @__PURE__ */ React.createElement("p", { className: "text-md font-light text-gray-500" }, product.description), /* @__PURE__ */ React.createElement("div", { className: "my-8 flex items-baseline justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "mr-2 text-2xl font-extrabold" }, "\uFFE6", money(product.unit_price || product.price)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, isSeatPriced(product) ? "/\uBA85/\uB144" : "/\uB144"))), isSeatPriced(product) && /* @__PURE__ */ React.createElement("label", { className: "mb-6 flex w-full flex-col items-start gap-2 text-left text-sm font-semibold text-slate-700" }, "\uCD94\uAC00 \uD300\uC6D0 \uC218", /* @__PURE__ */ React.createElement("input", { type: "number", min: "0", max: Math.max((product.max_quantity || 500) - 1, 0), value: extraMembers, onChange: (event) => {
+      teamQuantity = normalizeQuantity(product, Math.floor(Number(event.target.value) || 0) + 1);
+      renderMain();
+    }, className: "w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-950" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-normal text-slate-500" }, "\uBCF8\uC778 \uD3EC\uD568 \uC804\uCCB4 ", quantity, "\uC11D, \uCD1D ", money((product.unit_price || product.price) * quantity), "\uC6D0")), (product.features || []).length > 0 && /* @__PURE__ */ React.createElement("ul", { role: "list", className: "mb-8 space-y-4 text-left" }, product.features.map((text, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-center space-x-3" }, /* @__PURE__ */ React.createElement("span", { className: "h-5 w-5 flex-shrink-0 text-green-500" }, "\u2713"), /* @__PURE__ */ React.createElement("span", null, text)))), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -87,6 +121,9 @@ const MembershipPage = /* @__PURE__ */ (() => {
   }
   function selectProduct(product) {
     selectedProduct = product;
+    if (isSeatPriced(product)) {
+      teamQuantity = normalizeQuantity(product, teamQuantity || product.quantity || 1);
+    }
     renderMain();
   }
   async function loadMain() {
@@ -96,7 +133,7 @@ const MembershipPage = /* @__PURE__ */ (() => {
       alert(productData.message || "\uC0C1\uD488 \uC815\uBCF4\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
       products = [];
     } else {
-      products = productData.products || [];
+      products = sortProducts(productData.products);
     }
     if (window.gv_username !== "") {
       userinfo = await fetch("/account/ajax_get_userinfo/").then((res) => res.json());
@@ -112,7 +149,12 @@ const MembershipPage = /* @__PURE__ */ (() => {
     renderMain();
     try {
       const resultURL = window.location.origin + "/intro/membership/result/";
-      const query = new URLSearchParams({ product_id: product.uuid, type: "membership", method });
+      const query = new URLSearchParams({
+        product_id: product.uuid,
+        type: "membership",
+        method,
+        quantity: isSeatPriced(product) ? String(normalizeQuantity(product, teamQuantity)) : "1"
+      });
       const tempdata = await fetch("/ajax_request_order_id/?" + query.toString()).then((res) => res.json());
       if (tempdata.error) {
         alert(tempdata.message || "\uACB0\uC81C \uC694\uCCAD\uC744 \uC900\uBE44\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
