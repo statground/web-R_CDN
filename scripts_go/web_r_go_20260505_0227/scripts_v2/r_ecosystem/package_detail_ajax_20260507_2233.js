@@ -136,6 +136,40 @@
     target.outerHTML = trimmed;
   }
 
+  async function loadDependencyFragments(root) {
+    const scope = root || document;
+    const slots = Array.from(scope.querySelectorAll("[data-r-package-dependencies-url]"));
+    await Promise.all(
+      slots.map(async function (slot) {
+        if (!slot || slot.dataset.rPackageDependenciesLoading === "1") {
+          return;
+        }
+        const fragmentURL = slot.dataset.rPackageDependenciesUrl;
+        if (!fragmentURL) {
+          return;
+        }
+        slot.dataset.rPackageDependenciesLoading = "1";
+        try {
+          const response = await fetch(fragmentURL, {
+            credentials: "same-origin",
+            headers: {
+              Accept: "text/html",
+              "X-Requested-With": "fetch"
+            }
+          });
+          const html = await response.text();
+          replaceOuterHTML(slot, html);
+          initDetailInteractions(document);
+          if (!response.ok) {
+            document.documentElement.dataset.rPackageDependenciesStatus = "error";
+          }
+        } catch (error) {
+          renderLazyError(slot, "dependency 정보를 불러오지 못했습니다.");
+        }
+      })
+    );
+  }
+
   async function loadManualFragments(root) {
     const scope = root || document;
     const trigger = scope.querySelector("[data-r-package-manual-url]");
@@ -205,7 +239,7 @@
   }
 
   async function loadLazyFragments(root) {
-    await Promise.all([loadManualFragments(root), loadVersionFragments(root)]);
+    await Promise.all([loadDependencyFragments(root), loadManualFragments(root), loadVersionFragments(root)]);
   }
 
   async function loadDetail() {
