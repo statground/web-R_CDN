@@ -98,10 +98,95 @@
     render();
   }
 
+  function highlightCode(root) {
+    const scope = root || document;
+    if (!window.hljs || typeof window.hljs.highlightElement !== "function") {
+      return;
+    }
+    scope.querySelectorAll("pre code").forEach(function (code) {
+      if (code.dataset.rHighlightReady === "1") {
+        return;
+      }
+      window.hljs.highlightElement(code);
+      code.dataset.rHighlightReady = "1";
+    });
+  }
+
+  function initCodeCopy(root) {
+    const scope = root || document;
+    scope.querySelectorAll("[data-r-copy-code]").forEach(function (button) {
+      if (button.dataset.rCopyReady === "1") {
+        return;
+      }
+      button.dataset.rCopyReady = "1";
+      button.addEventListener("click", async function () {
+        const block = button.closest("[data-r-code-block]");
+        const code = block ? block.querySelector("code") : null;
+        const text = code ? code.textContent || "" : "";
+        if (!text) {
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          const oldText = button.textContent;
+          button.textContent = "Copied";
+          window.setTimeout(function () {
+            button.textContent = oldText || "Copy";
+          }, 1200);
+        } catch (error) {
+          const range = document.createRange();
+          range.selectNodeContents(code);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      });
+    });
+  }
+
+  function initInstallTabs(root) {
+    const scope = root || document;
+    scope.querySelectorAll("[data-r-install-tabs]").forEach(function (tabs) {
+      if (tabs.dataset.rInstallReady === "1") {
+        return;
+      }
+      tabs.dataset.rInstallReady = "1";
+      const card = tabs.closest("aside") || tabs.parentElement;
+      const code = card ? card.querySelector("[data-r-code-block] code") : null;
+      const label = card ? card.querySelector("[data-r-code-label]") : null;
+      tabs.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-r-install-tab]");
+        if (!button || !code) {
+          return;
+        }
+        tabs.querySelectorAll("[data-r-install-tab]").forEach(function (tab) {
+          tab.classList.remove("bg-white", "text-blue-700");
+          tab.classList.add("text-slate-600");
+          tab.setAttribute("aria-pressed", "false");
+        });
+        button.classList.remove("text-slate-600");
+        button.classList.add("bg-white", "text-blue-700");
+        button.setAttribute("aria-pressed", "true");
+        code.textContent = button.dataset.code || "";
+        code.removeAttribute("data-highlighted");
+        code.dataset.rHighlightReady = "0";
+        if (label) {
+          label.textContent = button.dataset.hint || button.textContent || "R";
+        }
+        highlightCode(card);
+      });
+    });
+  }
+
   function initDetailInteractions(root) {
     const scope = root || document;
     scope.querySelectorAll("[data-r-dep-table]").forEach(initDependencyTable);
     initFunctionSearch(scope);
+    initInstallTabs(scope);
+    initCodeCopy(scope);
+    highlightCode(scope);
   }
 
   function renderError(mount, message) {
