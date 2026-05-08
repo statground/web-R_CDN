@@ -293,7 +293,7 @@ function Div_menu() {
       img_url: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/menu_workshop.svg",
       title: "\uC6CC\uD06C\uC0F5"
     }
-  )))), /* @__PURE__ */ React.createElement("div", { id: "div_megamenu_intro", class: "hidden" }, /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-4 max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600" }, /* @__PURE__ */ React.createElement("ul", { class: "my-4 space-y-4" }, /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { id: "div_megamenu_intro", class: "hidden" }, /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-3 max-w-full px-[200px] py-1 mx-auto text-sm text-gray-600" }, /* @__PURE__ */ React.createElement("ul", { class: "my-4 space-y-4" }, /* @__PURE__ */ React.createElement(
     Div_sub_menu_pc_li_img,
     {
       url: "/intro/notice/",
@@ -307,7 +307,7 @@ function Div_menu() {
       img_url: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/menu_membership.svg",
       title: "\uC815\uD68C\uC6D0 \uAC00\uC785"
     }
-  )), /* @__PURE__ */ React.createElement("ul", { class: "my-4" }, /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uC774\uC6A9 \uC57D\uAD00", url: "/intro/terms/", target: "_self" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uAC1C\uC778\uC815\uBCF4 \uBCF4\uD638 \uBC29\uCE68", url: "/intro/privates/", target: "_self" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uD658\uBD88 \uADDC\uC815", url: "/intro/refund/", target: "_self" })), /* @__PURE__ */ React.createElement("ul", { class: "my-4" }, /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uB2E4\uC74C \uCE74\uD398 Biometrika", url: "https://cafe.daum.net/biometrika", target: "_blank" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uD1B5\uACC4\uB9C8\uB2F9", url: "https://www.statground.net", target: "_blank" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uD1B5\uACC4\uB9C8\uB2F9 \uD398\uC774\uC2A4\uBD81 \uADF8\uB8F9", url: "https://www.facebook.com/groups/statground", target: "_blank" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "Futuredu", url: "https://www.futuredu.kr", target: "_blank" }))), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_title, { title: "Web-R \uC18C\uAC1C" })), /* @__PURE__ */ React.createElement("div", { id: "div_menu_mobile", class: "hidden" }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("ul", { class: "my-4" }, /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uC774\uC6A9 \uC57D\uAD00", url: "/intro/terms/", target: "_self" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uAC1C\uC778\uC815\uBCF4 \uBCF4\uD638 \uBC29\uCE68", url: "/intro/privates/", target: "_self" }), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_li, { title: "\uD658\uBD88 \uADDC\uC815", url: "/intro/refund/", target: "_self" }))), /* @__PURE__ */ React.createElement(Div_sub_menu_pc_title, { title: "Web-R \uC18C\uAC1C" })), /* @__PURE__ */ React.createElement("div", { id: "div_menu_mobile", class: "hidden" }, /* @__PURE__ */ React.createElement(
     Div_sub_menu_mobile_title,
     {
       title: "Web-R \uC811\uC18D",
@@ -398,35 +398,7 @@ function Div_menu() {
       onClick: () => click_dropdown("intro"),
       img_url: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/menu_notice.svg"
     }
-  ), /* @__PURE__ */ React.createElement("div", { id: "div_menu_mobile_intro", class: "hidden" }, /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uACF5\uC9C0\uC0AC\uD56D", url: "/intro/notice/" }), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uC815\uD68C\uC6D0 \uAC00\uC785", url: "/intro/membership/" }), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uC774\uC6A9 \uC57D\uAD00", url: "/intro/terms/" }), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uAC1C\uC778\uC815\uBCF4 \uBCF4\uD638 \uBC29\uCE68", url: "/intro/privates/" }), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uD658\uBD88 \uADDC\uC815", url: "/intro/refund/" }), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      class: "flex justify-center items-start w-full h-[20px] cursor-pointer hover:bg-blue-100",
-      onClick: () => window.open("https://cafe.daum.net/biometrika")
-    },
-    /* @__PURE__ */ React.createElement("span", { class: "flex flex-row w-full" }, "- \uB2E4\uC74C \uCE74\uD398 Biometrika")
-  ), /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      class: "flex justify-center items-start w-full h-[20px] cursor-pointer hover:bg-blue-100",
-      onClick: () => window.open("https://www.statground.net")
-    },
-    /* @__PURE__ */ React.createElement("span", { class: "flex flex-row w-full" }, "- \uD1B5\uACC4\uB9C8\uB2F9")
-  ), /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      class: "flex justify-center items-start w-full h-[20px] cursor-pointer hover:bg-blue-100",
-      onClick: () => window.open("https://www.facebook.com/groups/statground")
-    },
-    /* @__PURE__ */ React.createElement("span", { class: "flex flex-row w-full" }, "- \uD1B5\uACC4\uB9C8\uB2F9 \uD398\uC774\uC2A4\uBD81 \uADF8\uB8F9")
-  ), /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      class: "flex justify-center items-start w-full h-[20px] cursor-pointer hover:bg-blue-100",
-      onClick: () => window.open("https://www.futuredu.kr")
-    },
-    /* @__PURE__ */ React.createElement("span", { class: "flex flex-row w-full" }, "- Futuredu")
-  ))));
+  ), /* @__PURE__ */ React.createElement("div", { id: "div_menu_mobile_intro", class: "hidden" }, /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uACF5\uC9C0\uC0AC\uD56D", url: "/intro/notice/" }), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uC815\uD68C\uC6D0 \uAC00\uC785", url: "/intro/membership/" }), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uC774\uC6A9 \uC57D\uAD00", url: "/intro/terms/" }), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uAC1C\uC778\uC815\uBCF4 \uBCF4\uD638 \uBC29\uCE68", url: "/intro/privates/" }), /* @__PURE__ */ React.createElement(Div_sub_menu_mobile_li, { title: "\uD658\uBD88 \uADDC\uC815", url: "/intro/refund/" }))));
 }
 window.WebRMenu = {
   Div_menu,
