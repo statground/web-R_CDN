@@ -307,6 +307,29 @@
     target.outerHTML = trimmed;
   }
 
+  async function fetchDetailHTML(detailURL) {
+    const early = window.__webrEarlyFetch && typeof window.__webrEarlyFetch.take === "function"
+      ? window.__webrEarlyFetch.take(detailURL)
+      : null;
+    if (early) {
+      const result = await early;
+      return {
+        ok: !!result.ok,
+        status: result.status || 0,
+        html: result.html || ""
+      };
+    }
+    const response = await fetch(detailURL, {
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "fetch" }
+    });
+    return {
+      ok: response.ok,
+      status: response.status,
+      html: await response.text()
+    };
+  }
+
   async function loadDependencyFragments(root) {
     const scope = root || document;
     const slots = Array.from(scope.querySelectorAll("[data-r-package-dependencies-url]"));
@@ -427,16 +450,12 @@
     }
 
     try {
-      const response = await fetch(detailURL, {
-        credentials: "same-origin",
-        headers: { "X-Requested-With": "fetch" }
-      });
-      const html = await response.text();
-      mount.innerHTML = html;
+      const result = await fetchDetailHTML(detailURL);
+      mount.innerHTML = result.html;
       mount.setAttribute("aria-busy", "false");
       initDetailInteractions(mount);
       void loadLazyFragments(mount);
-      if (!response.ok) {
+      if (!result.ok) {
         mount.dataset.loadStatus = "error";
       }
     } catch (error) {

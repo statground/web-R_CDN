@@ -34,6 +34,33 @@
     mount.classList.toggle("opacity-70", busy);
   }
 
+  async function fetchContentHTML(targetURL) {
+    const target = contentURL(targetURL);
+    const early = window.__webrEarlyFetch && typeof window.__webrEarlyFetch.take === "function"
+      ? window.__webrEarlyFetch.take(target)
+      : null;
+    if (early) {
+      const result = await early;
+      return {
+        ok: !!result.ok,
+        status: result.status || 0,
+        html: result.html || "",
+        url: target
+      };
+    }
+    const response = await fetch(target, {
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "fetch" },
+      signal: activeController.signal
+    });
+    return {
+      ok: response.ok,
+      status: response.status,
+      html: await response.text(),
+      url: target
+    };
+  }
+
   function renderError(mount) {
     mount.innerHTML =
       '<section class="w-full bg-white"><div class="mx-auto max-w-7xl px-6 py-8">' +
@@ -51,18 +78,13 @@
     activeController = new AbortController();
     setBusy(mount, true);
     try {
-      const response = await fetch(contentURL(targetURL), {
-        credentials: "same-origin",
-        headers: { "X-Requested-With": "fetch" },
-        signal: activeController.signal
-      });
-      const html = await response.text();
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status);
+      const result = await fetchContentHTML(targetURL);
+      if (!result.ok) {
+        throw new Error("HTTP " + result.status);
       }
-      mount.innerHTML = html;
+      mount.innerHTML = result.html;
       setBusy(mount, false);
-      mount.dataset.fragmentUrl = contentURL(targetURL).pathname + contentURL(targetURL).search;
+      mount.dataset.fragmentUrl = result.url.pathname + result.url.search;
       initIndex(mount);
       if (opts.push !== false && window.history && window.history.pushState) {
         const clean = cleanURL(targetURL);
