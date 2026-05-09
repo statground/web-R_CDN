@@ -364,15 +364,7 @@ function TeamMembersApp(props) {
 
   function renderSummaryMetrics() {
     if (scope.metrics === "internal") {
-      return React.createElement("dl", { className: "grid grid-cols-5 w-full md:grid-cols-1 gap-8 p-4 mx-auto text-gray-900 md:p-8" },
-        React.createElement(TeamMetric, { key: "team_count", title: "팀 수", value: teamAdminFormatNumber(displaySummary.team_count) + "팀" }),
-        React.createElement(TeamMetric, { key: "managed", title: "관리 계정", value: teamAdminFormatNumber(displaySummary.seat_used_total) + "명" }),
-        React.createElement(TeamMetric, { key: "seat_limit", title: "총 좌석", value: teamAdminFormatNumber(displaySummary.seat_limit_total) + "석" }),
-        React.createElement(TeamMetric, { key: "remaining", title: "잔여 좌석", value: teamAdminFormatNumber(displaySummary.remaining_total) + "석" }),
-        React.createElement(TeamMetric, { key: "admin", title: "관리자 팀", value: teamAdminFormatNumber(displaySummary.admin_team_total) + "팀" }),
-        React.createElement(TeamMetric, { key: "tester", title: "테스터 팀", value: teamAdminFormatNumber(displaySummary.tester_team_total) + "팀" }),
-        React.createElement(TeamMetric, { key: "bot", title: "Bot 팀", value: teamAdminFormatNumber(displaySummary.bot_team_total) + "팀" })
-      );
+      return null;
     }
     return React.createElement("div", { className: "grid grid-cols-3 gap-4 p-4 md:grid-cols-1 md:p-3" },
       React.createElement(TeamSummaryGroup, { title: "팀 구성", columns: 3 },
@@ -397,7 +389,7 @@ function TeamMembersApp(props) {
       React.createElement("div", { className: "flex w-full flex-col gap-4" },
         React.createElement("div", { className: "w-full" },
           React.createElement("div", { className: "p-2 text-center md:p-4" },
-            React.createElement("h2", { className: "mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900" },
+            React.createElement("h2", { className: (scope.metrics === "internal" ? "mb-0" : "mb-4") + " text-3xl font-extrabold leading-none tracking-tight text-gray-900" },
               React.createElement("span", { className: "text-blue-600" }, scope.title)
             ),
             renderSummaryMetrics()
