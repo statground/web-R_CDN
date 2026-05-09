@@ -24,7 +24,7 @@
       return url.pathname === "/r-ecosystem/packages/";
     }
     if (section === "news") {
-      return url.pathname === "/r-ecosystem/news/";
+      return url.pathname === "/r-ecosystem/" || url.pathname === "/r-ecosystem/news/";
     }
     return false;
   }
