@@ -810,8 +810,9 @@ async function handleChangeTab(tab) {
   header_title = getCommunityHeaderTitle(tab);
   resetListPagination();
   renderListPageShell();
-  await get_article_list("init");
+  const listPromise = get_article_list("init");
   refreshSidebarWidgets();
+  await listPromise;
 }
 function ensureListScrollListener() {
   if (communityState.listScrollBound) {
@@ -831,9 +832,10 @@ function ensureListScrollListener() {
 async function set_main_list() {
   resetListPagination();
   renderListPageShell();
-  await get_article_list("init");
+  const listPromise = get_article_list("init");
   refreshSidebarWidgets();
   ensureListScrollListener();
+  await listPromise;
 }
 function Div_article_read_buttons(props) {
   const btnClass = "font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full";
