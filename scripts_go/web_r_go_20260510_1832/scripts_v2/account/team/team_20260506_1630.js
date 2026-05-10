@@ -114,7 +114,7 @@ const AccountTeamPage = (() => {
     const team = data.team || {};
     const owner = data.owner || {};
     return h("div", { className: "space-y-6" },
-      h("div", { className: "grid grid-cols-5 gap-4 md:grid-cols-2 sm:grid-cols-1" },
+      h("div", { className: "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5" },
         statCard("전체 좌석", team.seat_limit || 0),
         statCard("사용 좌석", `${team.seat_used || 0} (팀장 포함)`),
         statCard("남은 좌석", team.remaining || 0),
@@ -129,7 +129,7 @@ const AccountTeamPage = (() => {
   function ManageView({ data }) {
     const team = data.team || {};
     return h("div", { className: "space-y-6" },
-      h("div", { className: "grid grid-cols-5 gap-4 md:grid-cols-2 sm:grid-cols-1" },
+      h("div", { className: "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5" },
         statCard("전체 좌석", team.seat_limit || 0),
         statCard("사용 좌석", `${team.seat_used || 0} (본인 포함)`),
         statCard("남은 좌석", team.remaining || 0),
