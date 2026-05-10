@@ -386,7 +386,7 @@ function AdminMembersManageMain(props) {
     const count = adminMemberNumber(row && row.cnt);
     const teamCount = adminMemberNumber(row && row.team_counted_member_cnt);
     const showTeamCount = title === "\uC815\uD68C\uC6D0" || title === "VIP\uD68C\uC6D0";
-    return /* @__PURE__ */ React.createElement("div", { key: `${title}_${idx}`, className: "basis-[220px] shrink-0 text-center" }, /* @__PURE__ */ React.createElement(Div_sub_card, { title, value: count, unit: "\uBA85", subtitle: showTeamCount ? "\uD300 \uBC18\uC601" : "", subvalue: showTeamCount ? teamCount : "", subunit: showTeamCount ? "\uBA85" : "" }));
+    return /* @__PURE__ */ React.createElement("div", { key: `${title}_${idx}`, className: "basis-[220px] shrink-0 text-center" }, /* @__PURE__ */ React.createElement(Div_sub_card, { title, value: count, unit: "\uBA85", subtitle: showTeamCount ? "\uD300 \uBC18\uC601" : null, subvalue: showTeamCount ? teamCount : null, subunit: showTeamCount ? "\uBA85" : null }));
   }
   function renderTeamRoleCountCard(row, idx) {
     const title = adminMemberText(row && row.name) || "-";
