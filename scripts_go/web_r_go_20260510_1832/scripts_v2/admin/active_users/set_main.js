@@ -13,13 +13,13 @@ function Div_operation_menu() {
     );
   }
   var date = /* @__PURE__ */ new Date();
-  return /* @__PURE__ */ React.createElement("div", { class: "col-span-2 md:grid-cols-1 justify-center item-center" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-col md:flex-row lg:w-48 md:w-full item-center" }, /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uCCAB \uD654\uBA74", url: "/admin/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uD65C\uC131 \uC0AC\uC6A9\uC790", url: "/admin/active_users/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "Web-R \uC811\uC18D \uD604\uD669", url: "/admin/webr/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uBC29\uBB38 \uD604\uD669", url: "/admin/visitors/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uD68C\uC6D0 \uD604\uD669", url: "/admin/members/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uACB0\uC81C \uD604\uD669", url: "/admin/payments/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uC815\uC0B0\uC561 \uC870\uD68C", url: "/admin/balance_account/" + date.getFullYear().toString() + "/" + (date.getMonth() + 1).toString() + "/" })));
+  return /* @__PURE__ */ React.createElement("div", { class: "md:col-span-2 justify-center item-center" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-row flex-wrap w-full md:flex-col md:w-48 item-center" }, /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uCCAB \uD654\uBA74", url: "/admin/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uD65C\uC131 \uC0AC\uC6A9\uC790", url: "/admin/active_users/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "Web-R \uC811\uC18D \uD604\uD669", url: "/admin/webr/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uBC29\uBB38 \uD604\uD669", url: "/admin/visitors/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uD68C\uC6D0 \uD604\uD669", url: "/admin/members/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uACB0\uC81C \uD604\uD669", url: "/admin/payments/" }), /* @__PURE__ */ React.createElement(Div_menu_button, { name: "\uC815\uC0B0\uC561 \uC870\uD68C", url: "/admin/balance_account/" + date.getFullYear().toString() + "/" + (date.getMonth() + 1).toString() + "/" })));
 }
 function Div_sub_title(props) {
   return /* @__PURE__ */ React.createElement("h5", { class: "mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900" }, /* @__PURE__ */ React.createElement("span", { class: "text-blue-600" }, props.title));
 }
 function Div_main_skeleton(props) {
-  return /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-12 md:grid-cols-1 justify-center item-center w-full px-[100px] py-[20px] md:px-[10px] md:grid-cols-1" }, /* @__PURE__ */ React.createElement(Div_operation_menu, null), /* @__PURE__ */ React.createElement("div", { className: "col-span-10 flex flex-col space-y-8" }, Array.from({ length: 4 }).map((_, idx) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 md:grid-cols-12 justify-center item-center w-full px-[10px] py-[20px] md:px-[100px]" }, /* @__PURE__ */ React.createElement(Div_operation_menu, null), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-10 flex flex-col space-y-8" }, Array.from({ length: 4 }).map((_, idx) => /* @__PURE__ */ React.createElement(
     "div",
     {
       key: idx,
@@ -114,7 +114,7 @@ function Div_main(props) {
     minValue = yearlyRows.length ? yearlyRows[0].date : "";
     maxValue = yearlyRows.length ? yearlyRows[yearlyRows.length - 1].date : "";
   }
-  return /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-12 md:grid-cols-1 justify-center items-top w-full px-[100px] py-[20px] md:px-[10px]" }, /* @__PURE__ */ React.createElement(Div_operation_menu, null), /* @__PURE__ */ React.createElement("div", { className: "col-span-10 md:grid-cols-1 justify-center items-center" }, /* @__PURE__ */ React.createElement("div", { className: classCard }, /* @__PURE__ */ React.createElement("div", { className: classWrap }, /* @__PURE__ */ React.createElement("dl", { className: "flex flex-col justify-center items-start w-full p-4 mx-auto text-gray-900" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between w-full mb-4 gap-3" }, /* @__PURE__ */ React.createElement("ul", { className: "flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 flex-1" }, /* @__PURE__ */ React.createElement("li", { className: "me-2", onClick: () => handleTabClick("daily") }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 justify-center items-top w-full px-[10px] py-[20px] md:px-[100px]" }, /* @__PURE__ */ React.createElement(Div_operation_menu, null), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-10 justify-center items-center" }, /* @__PURE__ */ React.createElement("div", { className: classCard }, /* @__PURE__ */ React.createElement("div", { className: classWrap }, /* @__PURE__ */ React.createElement("dl", { className: "flex flex-col justify-center items-start w-full p-4 mx-auto text-gray-900" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between w-full mb-4 gap-3" }, /* @__PURE__ */ React.createElement("ul", { className: "flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 flex-1" }, /* @__PURE__ */ React.createElement("li", { className: "me-2", onClick: () => handleTabClick("daily") }, /* @__PURE__ */ React.createElement(
     "div",
     {
       className: activeTab === "daily" ? class_tab_active : class_tab_inactive,
@@ -179,7 +179,7 @@ function Div_main(props) {
       value: currentValue,
       onChange: handleDateChange
     }
-  ))), /* @__PURE__ */ React.createElement(Div_sub_title, { title: "\uD37C\uB110 \uC694\uC57D" }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-5 gap-8 md:grid-cols-1 p-4 w-full" }, /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement(Div_sub_title, { title: "\uD37C\uB110 \uC694\uC57D" }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-8 md:grid-cols-5 p-4 w-full" }, /* @__PURE__ */ React.createElement(
     Kpi,
     {
       title: "\uBC29\uBB38\uC790",

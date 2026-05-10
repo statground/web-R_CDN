@@ -739,6 +739,23 @@ async function get_div_main_new_event() {
     document.getElementById("div_main_new_members")
   );
 }
+function waitForUtilityStyles() {
+  if (typeof window.__webrWhenUtilityStylesReady === "function") {
+    return window.__webrWhenUtilityStylesReady(7500);
+  }
+  if (window.__webrUtilityStylesReady) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => window.setTimeout(resolve, 2500));
+}
+function loadIndexContent() {
+  get_div_main_statistics();
+  get_book_list();
+  get_div_main_board();
+  get_div_main_board_notice();
+  get_div_main_youtube();
+  get_div_main_new_event();
+}
 function set_main() {
   function Div_main() {
     return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-[25px] mt-[50px] px-[10px] py-[0px] md:px-[100px] md:py-[20px]" }, /* @__PURE__ */ React.createElement("div", { id: "div_main_header", class: "w-full" }), /* @__PURE__ */ React.createElement("div", { id: "div_main_statistics", class: "w-full" }), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_book_list" }, /* @__PURE__ */ React.createElement(Div_book_list_skeleton, null)), /* @__PURE__ */ React.createElement("div", { id: "div_main_board", class: "w-full" }));
@@ -747,11 +764,6 @@ function set_main() {
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_main_header, null), document.getElementById("div_main_header"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_main_statistics_skeleton, null), document.getElementById("div_main_statistics"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_main_board_skeleton, null), document.getElementById("div_main_board"));
-  get_div_main_statistics();
-  get_book_list();
-  get_div_main_board();
-  get_div_main_board_notice();
-  get_div_main_youtube();
-  get_div_main_new_event();
+  waitForUtilityStyles().then(loadIndexContent);
 }
 window.set_main = set_main;

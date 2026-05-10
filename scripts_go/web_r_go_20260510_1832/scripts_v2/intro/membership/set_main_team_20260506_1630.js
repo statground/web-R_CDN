@@ -224,9 +224,9 @@ const MembershipPage = (() => {
       }, isSelected ? "선택됨" : "선택"));
   };
   function Main() {
-    return h("div", { className: "mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-20 py-8 md:px-8" },
+    return h("div", { className: "mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-6 py-8 md:px-20" },
       h(PageHeader, { title: "정회원 가입" }),
-      h("div", { className: "grid w-full grid-cols-4 items-start justify-center gap-4 md:flex md:flex-col md:gap-0 md:space-y-4" },
+      h("div", { className: "grid w-full grid-cols-1 items-start justify-center gap-4 md:grid-cols-4" },
         h("div", { className: "flex w-full flex-col items-center justify-center" }, h(UserInfoPanel)),
         nonTeamProducts().map((product) => h(ProductCard, { key: product.uuid, product })),
         h(TeamMembershipCard)));

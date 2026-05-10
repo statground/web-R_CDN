@@ -102,8 +102,8 @@ function Div_operation_menu() {
     }, props.name);
   }
   const date = new Date();
-  return React.createElement("div", { className: "col-span-2 md:grid-cols-1 justify-center item-center" },
-    React.createElement("div", { className: "flex flex-col md:flex-row lg:w-48 md:w-full item-center" },
+  return React.createElement("div", { className: "md:col-span-2 justify-center item-center" },
+    React.createElement("div", { className: "flex flex-row flex-wrap w-full md:flex-col md:w-48 item-center" },
       React.createElement(Div_menu_button, { name: "첫 화면", url: "/admin/" }),
       React.createElement(Div_menu_button, { name: "활성 사용자", url: "/admin/active_users/" }),
       React.createElement(Div_menu_button, { name: "Web-R 접속 현황", url: "/admin/webr/" }),
@@ -137,7 +137,7 @@ function TeamSummaryGroup(props) {
   const columnsClass = props.columns === 1 ? "grid-cols-1" : (props.columns === 2 ? "grid-cols-2" : "grid-cols-3");
   return React.createElement("section", { className: "rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm" },
     React.createElement("h3", { className: "mb-3 text-sm font-extrabold text-slate-900" }, props.title),
-    React.createElement("dl", { className: "grid " + columnsClass + " gap-3 md:grid-cols-1" }, props.children)
+    React.createElement("dl", { className: "grid " + columnsClass + " gap-3" }, props.children)
   );
 }
 
@@ -379,13 +379,13 @@ function SpecialAccountsApp(props) {
           className: "rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
         }, loadingAction === "search" ? "검색 중" : "검색")
       ),
-      candidates.length > 0 ? React.createElement("div", { className: "mt-3 grid grid-cols-2 gap-3 md:grid-cols-1" }, candidates.map(renderCandidate)) : null
+      candidates.length > 0 ? React.createElement("div", { className: "mt-3 grid grid-cols-1 gap-3 md:grid-cols-2" }, candidates.map(renderCandidate)) : null
     );
   }
 
   function renderCreateSpecialTools() {
     return React.createElement("section", { className: "rounded-lg border border-slate-200 bg-white p-4 shadow-sm" },
-      React.createElement("form", { onSubmit: submitCreateSpecial, autoComplete: "off", className: "grid grid-cols-5 gap-2 md:grid-cols-1" },
+      React.createElement("form", { onSubmit: submitCreateSpecial, autoComplete: "off", className: "grid grid-cols-1 gap-2 md:grid-cols-5" },
         React.createElement("input", {
           type: "email",
           name: "webr-special-account-email",
@@ -472,9 +472,9 @@ function SpecialAccountsApp(props) {
     );
   }
 
-  return React.createElement("div", { className: "grid grid-cols-12 md:grid-cols-1 justify-center item-center w-full px-[100px] py-[20px] md:px-[10px] md:grid-cols-1" },
+  return React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 justify-center item-center w-full px-[10px] py-[20px] md:px-[100px]" },
     React.createElement(Div_operation_menu, null),
-    React.createElement("div", { className: "col-span-10 md:grid-cols-1 justify-center item-center" },
+    React.createElement("div", { className: "md:col-span-10 justify-center item-center" },
       React.createElement("div", { className: "flex w-full flex-col gap-4" },
         React.createElement("div", { className: "p-2 text-center md:p-4" },
           React.createElement("h2", { className: "text-3xl font-extrabold leading-none tracking-tight text-gray-900" },
@@ -664,7 +664,7 @@ function TeamMembersApp(props) {
             React.createElement("span", { className: "rounded-md border border-slate-200 bg-slate-50 px-3 py-1" }, "만료 ", teamAdminDateOnly(team.expires_at) || "-")
           )
         ),
-        React.createElement("div", { className: "grid grid-cols-5 gap-3 md:grid-cols-2" },
+        React.createElement("div", { className: "grid grid-cols-1 gap-3 md:grid-cols-5" },
           React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "팀원 등급"), React.createElement("p", { className: "text-lg font-bold" }, team.member_role_name || "정회원")),
           React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "구매 좌석"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminFormatNumber(team.ledger_seats), "석")),
           React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "결제 합계"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminMoney(team.ledger_amount))),
@@ -717,7 +717,7 @@ function TeamMembersApp(props) {
     if (scope.metrics === "internal") {
       return null;
     }
-    return React.createElement("div", { className: "grid grid-cols-3 gap-4 p-4 md:grid-cols-1 md:p-3" },
+    return React.createElement("div", { className: "grid grid-cols-1 gap-4 p-4 md:grid-cols-3 md:p-3" },
       React.createElement(TeamSummaryGroup, { title: "팀 구성", columns: 3 },
         React.createElement(TeamSummaryMetric, { key: "team_count", title: "전체", value: teamAdminFormatNumber(displaySummary.team_count) + "팀" }),
         React.createElement(TeamSummaryMetric, { key: "regular", title: "정회원 팀", value: teamAdminFormatNumber(displaySummary.regular_team_total) + "팀" }),
@@ -734,9 +734,9 @@ function TeamMembersApp(props) {
     );
   }
 
-  return React.createElement("div", { className: "grid grid-cols-12 md:grid-cols-1 justify-center item-center w-full px-[100px] py-[20px] md:px-[10px] md:grid-cols-1" },
+  return React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 justify-center item-center w-full px-[10px] py-[20px] md:px-[100px]" },
     React.createElement(Div_operation_menu, null),
-    React.createElement("div", { className: "col-span-10 md:grid-cols-1 justify-center item-center" },
+    React.createElement("div", { className: "md:col-span-10 justify-center item-center" },
       React.createElement("div", { className: "flex w-full flex-col gap-4" },
         React.createElement("div", { className: "w-full" },
           React.createElement("div", { className: "p-2 text-center md:p-4" },

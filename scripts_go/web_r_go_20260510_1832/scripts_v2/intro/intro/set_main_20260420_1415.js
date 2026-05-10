@@ -19,7 +19,7 @@ function set_main() {
     title
   );
   function Div_main() {
-    return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-xl mx-auto md:px-8 space-y-8" }, /* @__PURE__ */ React.createElement("div", { class: "w-full max-w-screen-sm" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: "Web-R \uC18C\uAC1C", subtitle: "\uC11C\uBE44\uC2A4 \uC548\uB0B4" }), /* @__PURE__ */ React.createElement("p", { class: "text-gray-600 leading-7" }, "\uD604\uC7AC Web-R \uC18C\uAC1C \uC601\uC5ED\uC758 \uC815\uBCF4\uAD6C\uC870\uB97C \uAE30\uC900\uC73C\uB85C, \uC790\uC8FC \uC774\uB3D9\uD558\uB294 \uACBD\uB85C\uB97C \uD55C \uD654\uBA74\uC5D0\uC11C \uBC14\uB85C \uC811\uADFC\uD560 \uC218 \uC788\uB3C4\uB85D \uC815\uB9AC\uD588\uC2B5\uB2C8\uB2E4.")), /* @__PURE__ */ React.createElement("section", { class: "w-full max-w-screen-sm space-y-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "Web-R \uC811\uC18D"), /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-3 gap-4 md:grid-cols-1" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center py-8 px-6 w-full max-w-screen-xl mx-auto md:px-20 space-y-8" }, /* @__PURE__ */ React.createElement("div", { class: "w-full max-w-screen-sm" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: "Web-R \uC18C\uAC1C", subtitle: "\uC11C\uBE44\uC2A4 \uC548\uB0B4" }), /* @__PURE__ */ React.createElement("p", { class: "text-gray-600 leading-7" }, "\uD604\uC7AC Web-R \uC18C\uAC1C \uC601\uC5ED\uC758 \uC815\uBCF4\uAD6C\uC870\uB97C \uAE30\uC900\uC73C\uB85C, \uC790\uC8FC \uC774\uB3D9\uD558\uB294 \uACBD\uB85C\uB97C \uD55C \uD654\uBA74\uC5D0\uC11C \uBC14\uB85C \uC811\uADFC\uD560 \uC218 \uC788\uB3C4\uB85D \uC815\uB9AC\uD588\uC2B5\uB2C8\uB2E4.")), /* @__PURE__ */ React.createElement("section", { class: "w-full max-w-screen-sm space-y-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "Web-R \uC811\uC18D"), /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 gap-4 md:grid-cols-3" }, /* @__PURE__ */ React.createElement(
       QuickCard,
       {
         title: "\uBB34\uB8CC \uC11C\uBC84 \uC811\uC18D",
@@ -43,7 +43,7 @@ function set_main() {
         href: "/webr/notebook/",
         icon: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/R_logo.svg"
       }
-    ))), /* @__PURE__ */ React.createElement("section", { class: "w-full max-w-screen-sm space-y-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "\uC548\uB0B4 \uBC0F \uC815\uCC45"), /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-2 gap-4 md:grid-cols-1" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("section", { class: "w-full max-w-screen-sm space-y-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "\uC548\uB0B4 \uBC0F \uC815\uCC45"), /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 gap-4 md:grid-cols-2" }, /* @__PURE__ */ React.createElement(
       QuickCard,
       {
         title: "\uACF5\uC9C0\uC0AC\uD56D",
@@ -75,7 +75,7 @@ function set_main() {
         href: "/intro/privates/",
         icon: "https://cdn.jsdelivr.net/gh/statground/web-R_CDN@f3e464e95616fa13712baa6adbbb0b6cda7ee821/images/svg/menu_notice.svg"
       }
-    ))), /* @__PURE__ */ React.createElement("section", { class: "w-full max-w-screen-sm space-y-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "\uD568\uAED8 \uBCF4\uAE30"), /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-3 gap-4 md:grid-cols-1" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("section", { class: "w-full max-w-screen-sm space-y-4" }, /* @__PURE__ */ React.createElement("h2", { class: "text-2xl font-extrabold text-gray-900" }, "\uD568\uAED8 \uBCF4\uAE30"), /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 gap-4 md:grid-cols-3" }, /* @__PURE__ */ React.createElement(
       QuickCard,
       {
         title: "\uCEE4\uBBA4\uB2C8\uD2F0",

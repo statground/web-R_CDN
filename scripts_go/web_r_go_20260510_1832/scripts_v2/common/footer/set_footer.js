@@ -32,7 +32,7 @@ function set_footer(service) {
         href: props.href,
         target: props.target || undefined,
         rel: props.target ? "noopener noreferrer" : undefined,
-        className: "mr-4 text-sm text-gray-600 hover:text-blue-700 hover:underline md:mr-0"
+        className: "text-sm text-gray-600 hover:text-blue-700 hover:underline"
       }, props.children)
     );
   }
@@ -51,7 +51,7 @@ function set_footer(service) {
           ["/intro/terms/", "서비스 이용약관", ""],
           ["/intro/privates/", "개인정보 보호 방침", ""]
         ];
-    return h("ul", { className: "flex flex-wrap items-center gap-y-2 text-center md:flex-col md:items-start md:text-left" },
+    return h("ul", { className: "flex flex-col items-start gap-3 text-left md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-6 md:gap-y-2 md:text-right" },
       links.map(function(link) {
         return h(FooterLink, { key: link[0], href: link[0], target: link[2] || undefined }, link[1]);
       })
@@ -60,7 +60,7 @@ function set_footer(service) {
 
   function Div_footer() {
     return h("div", { className: "w-full bg-white py-10" },
-      h("div", { className: "mx-auto flex max-w-screen-xl flex-row justify-between gap-8 px-4 md:flex-col md:px-6" },
+      h("div", { className: "mx-auto flex max-w-screen-xl flex-col gap-8 px-6 md:flex-row md:items-start md:justify-between md:px-4" },
         h(FooterAddress, null),
         h("div", { className: "pt-2" }, h(FooterMenu, null))
       )

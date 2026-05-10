@@ -89,7 +89,7 @@ function set_main() {
     }
   }
   function AppSkeletonCard() {
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center items-center bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center w-full h-48 bg-gray-300 rounded sm:w-96" }, /* @__PURE__ */ React.createElement("svg", { className: "w-10 h-10 text-gray-200", "aria-hidden": "true", xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 20 18" }, /* @__PURE__ */ React.createElement("path", { d: "M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" }))), /* @__PURE__ */ React.createElement("div", { className: "h-2.5 bg-gray-200 rounded-full w-48 mb-4" }));
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center items-center bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center w-full h-48 bg-gray-300 rounded" }, /* @__PURE__ */ React.createElement("svg", { className: "w-10 h-10 text-gray-200", "aria-hidden": "true", xmlns: "http://www.w3.org/2000/svg", fill: "currentColor", viewBox: "0 0 20 18" }, /* @__PURE__ */ React.createElement("path", { d: "M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" }))), /* @__PURE__ */ React.createElement("div", { className: "h-2.5 bg-gray-200 rounded-full w-48 mb-4" }));
   }
   function AppGrid(props) {
     const username = getCurrentUsername();
@@ -97,7 +97,7 @@ function set_main() {
     if (rows.length === 0) {
       return /* @__PURE__ */ React.createElement("div", { className: "w-full rounded-lg border border-slate-200 bg-white px-6 py-8 text-center text-sm text-slate-500" }, "\uD45C\uC2DC\uD560 Web-R \uC571\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
     }
-    return /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-4 md:grid-cols-2 sm:grid-cols-1" }, rows.map((rowKey) => {
+    return /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" }, rows.map((rowKey) => {
       const app = props.data[rowKey] || {};
       const authFlag = String(app.auth || "").toUpperCase();
       const showLoginNotice = username === "";
@@ -146,7 +146,7 @@ function set_main() {
         alive = false;
       };
     }, [currentUrl]);
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto md:px-8" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: resolveWebrSubtitle(currentUrl), subtitle: "Web-R \uC811\uC18D" }), /* @__PURE__ */ React.createElement("div", { id: "div_app_list", className: "w-full" }, appData === null ? /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-4 md:grid-cols-2 sm:grid-cols-1 animate-pulse" }, /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null)) : errorMsg ? /* @__PURE__ */ React.createElement("div", { className: "w-full rounded-lg border border-rose-200 bg-rose-50 px-6 py-8 text-center text-sm text-rose-600" }, errorMsg) : /* @__PURE__ */ React.createElement(AppGrid, { data: appData })));
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center items-center py-8 px-6 w-full max-w-screen-sm mx-auto md:px-20" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: resolveWebrSubtitle(currentUrl), subtitle: "Web-R \uC811\uC18D" }), /* @__PURE__ */ React.createElement("div", { id: "div_app_list", className: "w-full" }, appData === null ? /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse" }, /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null), /* @__PURE__ */ React.createElement(AppSkeletonCard, null)) : errorMsg ? /* @__PURE__ */ React.createElement("div", { className: "w-full rounded-lg border border-rose-200 bg-rose-50 px-6 py-8 text-center text-sm text-rose-600" }, errorMsg) : /* @__PURE__ */ React.createElement(AppGrid, { data: appData })));
   }
   ReactDOM.render(/* @__PURE__ */ React.createElement(WebrLandingPage, null), document.getElementById("div_main"));
 }
