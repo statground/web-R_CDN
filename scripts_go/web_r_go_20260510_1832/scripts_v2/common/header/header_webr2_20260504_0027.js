@@ -11,8 +11,8 @@ const MenuState = {
 };
 
 const MENUS = ["webr", "r_ecosystem", "community", "book", "workshop", "intro"];
-const CLASS_PC_OPEN = "block md:hidden bg-white border-b border-gray-200 shadow-sm";
-const CLASS_MOBILE_OPEN = "hidden md:flex md:flex-col md:visible md:px-6 md:py-4 md:space-y-3 md:border-t md:border-gray-200 md:bg-white";
+const CLASS_PC_OPEN = "hidden bg-white border-b border-gray-200 shadow-sm md:block";
+const CLASS_MOBILE_OPEN = "flex flex-col space-y-3 border-t border-gray-200 bg-white px-6 py-4 md:hidden";
 const CLASS_HIDDEN = "hidden";
 const h = React.createElement;
 
@@ -139,7 +139,7 @@ function click_hamburger() {
   MenuState.hamburger = !MenuState.hamburger;
   if (menuMobile) {
     menuMobile.className = MenuState.hamburger
-      ? "hidden md:flex md:flex-col md:visible md:px-6 md:py-4 md:space-y-3 md:border-t md:border-gray-200 md:bg-white"
+      ? CLASS_MOBILE_OPEN
       : "hidden";
   }
 }
@@ -222,7 +222,7 @@ function AccountLinks(props) {
 
 function AccountBar(props) {
   const data = props.data || {};
-  return h("div", { className: "flex w-full flex-row flex-wrap items-center justify-end gap-2 text-sm md:justify-start" },
+  return h("div", { className: "flex w-full flex-row flex-wrap items-center justify-start gap-2 text-sm md:justify-end" },
     h(AccountLinks, { data })
   );
 }
@@ -280,7 +280,7 @@ function ImageTile(props) {
 function MegaFeaturePanel(props) {
   const section = props.section;
   const link = section.panelLink || ["#", "바로가기"];
-  return h("aside", { className: "p-3 md:border-t md:border-gray-200" },
+  return h("aside", { className: "border-t border-gray-200 p-3 md:border-t-0" },
     h("h3", { className: "mb-2 text-base font-semibold text-gray-900" }, section.panelTitle),
     h("p", { className: "mb-3 text-sm leading-6 text-gray-500" }, section.panelText),
     h("a", {
@@ -295,8 +295,8 @@ function ImageMegaMenu(props) {
   const hasFeature = props.id === "book";
   const columns = splitColumns(section.items, props.id === "workshop" ? 2 : hasFeature ? 3 : 4);
   const gridClass = props.id === "workshop"
-    ? "mx-auto grid max-w-4xl grid-cols-2 gap-6 px-10 py-4 text-sm text-gray-600 md:grid-cols-1 md:px-6"
-    : "mx-auto grid max-w-screen-xl grid-cols-4 gap-6 px-4 py-4 text-sm text-gray-600 md:grid-cols-1 md:px-6";
+    ? "mx-auto grid max-w-4xl grid-cols-1 gap-6 px-6 py-4 text-sm text-gray-600 md:grid-cols-2 md:px-10"
+    : "mx-auto grid max-w-screen-xl grid-cols-1 gap-6 px-6 py-4 text-sm text-gray-600 md:grid-cols-4 md:px-4";
   return h("nav", { id: "div_megamenu_" + props.id, className: "hidden", "aria-label": section.title + " 하위 메뉴" },
     h("div", { className: gridClass },
       columns.map(function(column, index) {
@@ -328,7 +328,7 @@ function LegacyIntroMenu() {
     );
   }
   return h("nav", { id: "div_megamenu_intro", className: "hidden", "aria-label": "Web-R 소개 하위 메뉴" },
-    h("div", { className: "mx-auto grid max-w-screen-xl grid-cols-3 gap-6 px-4 py-4 text-sm text-gray-600 md:grid-cols-1 md:px-6" },
+    h("div", { className: "mx-auto grid max-w-screen-xl grid-cols-1 gap-6 px-6 py-4 text-sm text-gray-600 md:grid-cols-3 md:px-4" },
       h("ul", { className: "space-y-3" }, h(ImageTile, { item: notice })),
       h("ul", { className: "space-y-3" }, h(ImageTile, { item: membership })),
       h("ul", { className: "flex flex-col items-center py-4" }, policyLinks.map(function(item) {
@@ -365,7 +365,7 @@ function MegaMenu(props) {
   const section = menuSections[props.id];
   const columns = splitColumns(section.items, 3);
   return h("nav", { id: "div_megamenu_" + props.id, className: "hidden", "aria-label": section.title + " 하위 메뉴" },
-    h("div", { className: "mx-auto grid max-w-screen-xl grid-cols-4 gap-6 px-4 py-7 text-gray-900 md:grid-cols-1 md:px-6" },
+    h("div", { className: "mx-auto grid max-w-screen-xl grid-cols-1 gap-6 px-6 py-7 text-gray-900 md:grid-cols-4 md:px-4" },
       columns.map(function(column, index) {
         return h("ul", { key: props.id + "-col-" + index, className: "space-y-1" },
           column.map(function(item) {
@@ -373,7 +373,7 @@ function MegaMenu(props) {
           })
         );
       }),
-      h("aside", { className: "p-3 md:border-t md:border-gray-200" },
+      h("aside", { className: "border-t border-gray-200 p-3 md:border-t-0" },
         h("h2", { className: "mb-2 text-base font-semibold text-gray-900" }, section.panelTitle),
         h("p", { className: "mb-3 text-sm leading-6 text-gray-500" }, section.panelText),
         h("a", { href: section.panelLink[0], className: "inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-800" },
@@ -436,12 +436,12 @@ function Div_menu() {
         h("a", { href: "/", className: "flex items-center" },
           h("img", { src: WEBR_CDN + "images/logo/logo.png", className: "mr-3 h-10 object-scale-down", alt: "Statground Logo" })
         ),
-        h("div", { id: "div_menu_external_header", className: "flex min-w-0 flex-1 justify-end md:hidden" },
+        h("div", { id: "div_menu_external_header", className: "hidden min-w-0 flex-1 justify-end md:flex" },
           h(ExternalBar, null)
         ),
         h("button", {
           type: "button",
-          className: "hidden rounded-lg p-2 text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 md:inline-flex",
+          className: "inline-flex rounded-lg p-2 text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 md:hidden",
           "aria-label": "Open main menu",
           "aria-controls": "div_menu_mobile",
           "aria-expanded": MenuState.hamburger ? "true" : "false",
@@ -450,13 +450,13 @@ function Div_menu() {
       )
     ),
     h("nav", { className: "border-b border-gray-200 bg-white" },
-      h("div", { className: "mx-auto flex max-w-screen-xl items-center justify-between gap-8 px-4 py-4 md:flex-col md:items-stretch md:px-6" },
-        h("div", { className: "flex flex-row flex-wrap items-center gap-7 md:hidden" },
+      h("div", { className: "mx-auto flex max-w-screen-xl flex-col items-stretch gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:gap-8 md:px-6 md:py-4" },
+        h("div", { className: "hidden flex-row flex-wrap items-center gap-7 md:flex" },
           MENUS.map(function(id) {
             return h(DesktopNavItem, { key: id, id });
           })
         ),
-        h("div", { id: "div_menu_sub_header", className: "flex min-w-[280px] flex-1 justify-end md:min-w-0 md:justify-start" },
+        h("div", { id: "div_menu_sub_header", className: "flex min-w-0 justify-start md:min-w-[280px] md:flex-1 md:justify-end" },
           h(AccountBar, { data: { name: window.gv_username || "", role: window.gv_role || "" } })
         )
       ),
@@ -464,7 +464,7 @@ function Div_menu() {
         MENUS.map(function(id) {
           return h(MobileMenuItem, { key: "mobile-" + id, id });
         }),
-        h("div", { className: "hidden border-t border-gray-200 px-3 pt-3 md:block" },
+        h("div", { className: "block border-t border-gray-200 px-3 pt-3 md:hidden" },
           h(ExternalBar, null)
         )
       )

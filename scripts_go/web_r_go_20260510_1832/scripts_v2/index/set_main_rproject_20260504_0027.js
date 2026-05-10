@@ -83,7 +83,7 @@ function Span_btn_my_article(props) {
   return props.toggle === "writer" && /* @__PURE__ */ React.createElement("span", { class: `${class_span_btn_default} text-[10px] bg-blue-500 text-white animate-pulse` }, "MY");
 }
 function Div_main_header() {
-  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center text-center w-full" }, /* @__PURE__ */ React.createElement("h1", { class: "mb-4 text-5xl font-extrabold leading-none tracking-tight text-gray-900 md:text-2xl" }, "\uC6F9\uC5D0\uC11C \uD558\uB294 ", /* @__PURE__ */ React.createElement("mark", { class: "px-2 text-white bg-blue-600 rounded" }, "R"), " \uD1B5\uACC4"), /* @__PURE__ */ React.createElement("p", { class: "text-lg font-normal text-gray-500 lg:text-xl" }, '"\uC6F9\uC5D0\uC11C \uD558\uB294 R\uD1B5\uACC4"\uB294, \uD1B5\uACC4\uC5D0\uB294 \uAD00\uC2EC\uC774 \uC788\uC73C\uB098 R\uC744 \uC5B4\uB824\uC6CC\uD558\uB294 \uC5EC\uB7EC \uC5F0\uAD6C\uC790\uB4E4\uC744 \uC704\uD55C \uD504\uB85C\uC81D\uD2B8\uC785\uB2C8\uB2E4.', /* @__PURE__ */ React.createElement("br", null), "R\uC124\uCE58\uC5C6\uC774 \uD074\uB9AD\uB9CC\uC73C\uB85C \uC6F9\uC5D0 \uC788\uB294 \uC11C\uBC84\uB97C \uC774\uC6A9\uD558\uC5EC \uD1B5\uACC4\uBD84\uC11D\uC744 \uD558\uACE0 \uBCF4\uB2E4 R\uC744 \uC27D\uAC8C \uC0AC\uC6A9\uD558\uAE30 \uC704\uD55C \uD328\uD0A4\uC9C0 \uBC0F \uC571 \uACF5\uB3D9\uAC1C\uBC1C\uC744 \uBAA9\uD45C\uB85C \uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4."));
+  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center text-center w-full" }, /* @__PURE__ */ React.createElement("h1", { class: "mb-4 text-2xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl" }, "\uC6F9\uC5D0\uC11C \uD558\uB294 ", /* @__PURE__ */ React.createElement("mark", { class: "px-2 text-white bg-blue-600 rounded" }, "R"), " \uD1B5\uACC4"), /* @__PURE__ */ React.createElement("p", { class: "text-base font-normal text-gray-500 md:text-lg lg:text-xl" }, '"\uC6F9\uC5D0\uC11C \uD558\uB294 R\uD1B5\uACC4"\uB294, \uD1B5\uACC4\uC5D0\uB294 \uAD00\uC2EC\uC774 \uC788\uC73C\uB098 R\uC744 \uC5B4\uB824\uC6CC\uD558\uB294 \uC5EC\uB7EC \uC5F0\uAD6C\uC790\uB4E4\uC744 \uC704\uD55C \uD504\uB85C\uC81D\uD2B8\uC785\uB2C8\uB2E4.', /* @__PURE__ */ React.createElement("br", null), "R\uC124\uCE58\uC5C6\uC774 \uD074\uB9AD\uB9CC\uC73C\uB85C \uC6F9\uC5D0 \uC788\uB294 \uC11C\uBC84\uB97C \uC774\uC6A9\uD558\uC5EC \uD1B5\uACC4\uBD84\uC11D\uC744 \uD558\uACE0 \uBCF4\uB2E4 R\uC744 \uC27D\uAC8C \uC0AC\uC6A9\uD558\uAE30 \uC704\uD55C \uD328\uD0A4\uC9C0 \uBC0F \uC571 \uACF5\uB3D9\uAC1C\uBC1C\uC744 \uBAA9\uD45C\uB85C \uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4."));
 }
 function Div_main_statistics_skeleton() {
   function Div_Sub(props) {
@@ -97,7 +97,7 @@ function Div_main_statistics_skeleton() {
       /* @__PURE__ */ React.createElement("div", { class: "pl-4 text-sm font-normal animate-pulse" }, /* @__PURE__ */ React.createElement("div", { class: "h-2.5 bg-gray-300 rounded-full w-full mb-2.5" }), /* @__PURE__ */ React.createElement("div", { class: "w-32 h-2 bg-gray-200 rounded-full" }))
     );
   }
-  return /* @__PURE__ */ React.createElement("div", { class: "grid lg:grid-cols-3 md:grid-cols-1 mx-auto" }, /* @__PURE__ */ React.createElement(Div_Sub, { svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/member.svg" }), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(Div_Sub, { svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/visitors.svg" }), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(Div_Sub, { svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/pageview.svg" }));
+  return /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 gap-4 mx-auto md:grid-cols-3" }, /* @__PURE__ */ React.createElement(Div_Sub, { svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/member.svg" }), /* @__PURE__ */ React.createElement(Div_Sub, { svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/visitors.svg" }), /* @__PURE__ */ React.createElement(Div_Sub, { svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/pageview.svg" }));
 }
 function Div_main_board_skeleton() {
   function Div_table_skeleton({ title, id, rows = 5 }) {
@@ -108,7 +108,11 @@ function Div_main_board_skeleton() {
     return /* @__PURE__ */ React.createElement("div", { class: "w-full rounded-lg border bg-white p-4", id }, /* @__PURE__ */ React.createElement("h6", { class: "mb-3 text-base font-semibold text-gray-900" }, title), children);
   }
   const Bullet = () => /* @__PURE__ */ React.createElement("div", { class: "flex items-center gap-3 py-2" }, /* @__PURE__ */ React.createElement("div", { class: "h-2.5 w-2.5 rounded-full bg-gray-300 animate-pulse" }), /* @__PURE__ */ React.createElement("div", { class: "h-2.5 bg-gray-300 rounded-full w-3/4 animate-pulse" }));
-  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-row pt-12 pb-12 justify-center", id: "div_board" }, /* @__PURE__ */ React.createElement("div", { class: "container mx-auto px-4" }, /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-4 gap-6 md:grid-cols-1" }, /* @__PURE__ */ React.createElement("div", { class: "col-span-3 flex flex-col gap-6" }, /* @__PURE__ */ React.createElement(Div_table_skeleton, { title: "\uCEE4\uBBA4\uB2C8\uD2F0", id: "div_main_board_free", rows: 6 }), /* @__PURE__ */ React.createElement(Div_table_skeleton, { title: "\uCD5C\uADFC \uD65C\uB3D9", id: "div_main_new_members", rows: 6 })), /* @__PURE__ */ React.createElement("div", { class: "col-span-1 flex flex-col gap-6" }, /* @__PURE__ */ React.createElement(Div_card, { title: "\uACF5\uC9C0\uC0AC\uD56D", id: "div_main_board_notice" }, /* @__PURE__ */ React.createElement(Bullet, null), /* @__PURE__ */ React.createElement(Bullet, null), /* @__PURE__ */ React.createElement(Bullet, null)), /* @__PURE__ */ React.createElement(Div_card, { title: "\uC720\uD29C\uBE0C", id: "div_main_youtube" }, /* @__PURE__ */ React.createElement("div", { class: "w-full aspect-video rounded-md bg-gray-300 animate-pulse" }))))));
+  return /* @__PURE__ */ React.createElement("div", { class: "flex flex-row pt-12 pb-12 justify-center", id: "div_board" }, /* @__PURE__ */ React.createElement("div", { class: "container mx-auto px-4" }, /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 gap-6 md:grid-cols-4" }, /* @__PURE__ */ React.createElement("div", { class: "col-span-1 flex flex-col gap-6 md:col-span-3" }, /* @__PURE__ */ React.createElement(Div_table_skeleton, { title: "\uCEE4\uBBA4\uB2C8\uD2F0", id: "div_main_board_free", rows: 6 }), /* @__PURE__ */ React.createElement(Div_table_skeleton, { title: "\uCD5C\uADFC \uD65C\uB3D9", id: "div_main_new_members", rows: 6 })), /* @__PURE__ */ React.createElement("div", { class: "col-span-1 flex flex-col gap-6" }, /* @__PURE__ */ React.createElement(Div_card, { title: "\uACF5\uC9C0\uC0AC\uD56D", id: "div_main_board_notice" }, /* @__PURE__ */ React.createElement(Bullet, null), /* @__PURE__ */ React.createElement(Bullet, null), /* @__PURE__ */ React.createElement(Bullet, null)), /* @__PURE__ */ React.createElement(Div_card, { title: "\uC720\uD29C\uBE0C", id: "div_main_youtube" }, /* @__PURE__ */ React.createElement("div", { class: "w-full aspect-video rounded-md bg-gray-300 animate-pulse" }))))));
+}
+function Div_book_list_skeleton() {
+  const Card = (_, i) => /* @__PURE__ */ React.createElement("div", { key: i, class: "flex h-48 w-64 min-w-64 flex-col justify-start rounded-xl border bg-white p-3 shadow" }, /* @__PURE__ */ React.createElement("div", { class: "h-28 w-full rounded-md border bg-gray-300 animate-pulse" }), /* @__PURE__ */ React.createElement("div", { class: "mx-auto mt-4 h-3 w-4/5 rounded-full bg-gray-300 animate-pulse" }), /* @__PURE__ */ React.createElement("div", { class: "mx-auto mt-3 h-2.5 w-3/5 rounded-full bg-gray-200 animate-pulse" }));
+  return /* @__PURE__ */ React.createElement("div", { class: "w-full pt-4" }, /* @__PURE__ */ React.createElement("div", { class: "flex gap-3 overflow-hidden pb-2" }, Array.from({ length: 7 }).map(Card)));
 }
 async function get_div_main_statistics() {
   function Div_sub(props) {
@@ -124,7 +128,7 @@ async function get_div_main_statistics() {
     );
   }
   function Div_result(props) {
-    return /* @__PURE__ */ React.createElement("div", { class: "grid lg:grid-cols-3 md:grid-cols-1 mx-auto" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { class: "grid grid-cols-1 gap-4 mx-auto md:grid-cols-3" }, /* @__PURE__ */ React.createElement(
       Div_sub,
       {
         title: "\uCD1D \uAC00\uC785\uC790 \uC218",
@@ -132,7 +136,7 @@ async function get_div_main_statistics() {
         unit: "\uBA85",
         svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/member.svg"
       }
-    ), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(
       Div_sub,
       {
         title: "\uC624\uB298\uC758 \uBC29\uBB38\uC790 \uC218",
@@ -140,7 +144,7 @@ async function get_div_main_statistics() {
         unit: "\uBA85",
         svg: "https://cdn.jsdelivr.net/gh/statground/Statground_CDN/assets3/images/svg/visitors.svg"
       }
-    ), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(
       Div_sub,
       {
         title: "\uC624\uB298\uC758 \uD398\uC774\uC9C0 \uBDF0",
@@ -737,7 +741,7 @@ async function get_div_main_new_event() {
 }
 function set_main() {
   function Div_main() {
-    return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-[25px] mt-[50px] px-[100px] py-[20px] md:px-[10px] md:py-[0px]" }, /* @__PURE__ */ React.createElement("div", { id: "div_main_header", class: "w-full" }), /* @__PURE__ */ React.createElement("div", { id: "div_main_statistics", class: "w-full" }), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_book_list" }, /* @__PURE__ */ React.createElement("div", { class: "flex flex-row justify-center items-center w-full h-[150px] mb-4 bg-gray-300 animate-pulse" })), /* @__PURE__ */ React.createElement("div", { id: "div_main_board", class: "w-full" }));
+    return /* @__PURE__ */ React.createElement("div", { class: "flex flex-col justify-center items-center w-full space-y-[25px] mt-[50px] px-[10px] py-[0px] md:px-[100px] md:py-[20px]" }, /* @__PURE__ */ React.createElement("div", { id: "div_main_header", class: "w-full" }), /* @__PURE__ */ React.createElement("div", { id: "div_main_statistics", class: "w-full" }), /* @__PURE__ */ React.createElement("div", { class: "w-full", id: "div_book_list" }, /* @__PURE__ */ React.createElement(Div_book_list_skeleton, null)), /* @__PURE__ */ React.createElement("div", { id: "div_main_board", class: "w-full" }));
   }
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_main, null), document.getElementById("div_main"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_main_header, null), document.getElementById("div_main_header"));
