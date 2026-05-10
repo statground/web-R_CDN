@@ -229,8 +229,8 @@ function AccountBar(props) {
 
 function ExternalBar() {
   return h("div", { className: "flex w-full flex-row flex-wrap items-center justify-end gap-2 text-sm" },
+    h(UtilityLink, { href: "https://www.statground.net", target: "_blank" }, "통계마당"),
     h(UtilityLink, { href: "https://cafe.daum.net/biometrika", target: "_blank" }, "Biometrika"),
-    h(UtilityLink, { href: "https://www.statground.net", target: "_blank" }, "통계마당 홈페이지"),
     h("span", { className: "mx-1 h-5 w-px bg-gray-200", "aria-hidden": "true" }),
     h("div", { className: "flex flex-row flex-wrap items-center gap-1" },
       socialLinks.map(function(item) {
