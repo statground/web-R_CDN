@@ -981,9 +981,15 @@ async function get_article_list(loadMode, requestedPage = 1) {
     body: request_data
   }).then((res) => res.json());
   communityState.article_counter = data["count"] ? data["count"].cnt : 0;
+  const totalPages = Math.max(1, Math.ceil(Number(communityState.article_counter || 0) / COMMUNITY_PAGE_SIZE));
+  const listData = data && data.list ? data.list : {};
+  if (replaceMainList && Object.keys(listData).length === 0 && communityState.page_num > totalPages) {
+    await get_article_list("page", totalPages);
+    return;
+  }
   const targetId = replaceMainList ? "div_article_list" : `div_article_list_${communityState.page_num}`;
   ReactDOM.render(
-    /* @__PURE__ */ React.createElement(ArticleList, { data: data.list, isMain: replaceMainList }),
+    /* @__PURE__ */ React.createElement(ArticleList, { data: listData, isMain: replaceMainList }),
     document.getElementById(targetId)
   );
   communityState.toggle_page = false;
