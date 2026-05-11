@@ -1097,7 +1097,12 @@ function set_article() {
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_header, { data: communityState.articleData }), document.getElementById("div_community_read_header"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_buttons, { data: communityState.articleData }), document.getElementById("div_article_read_buttons"));
   ReactDOM.render(/* @__PURE__ */ React.createElement(Div_article_read_file, null), document.getElementById("div_community_read_file"));
-  WebRSolidEdit.renderContent(document.querySelector("#div_community_read_content"), communityState.articleData.content);
+  const contentEl = document.querySelector("#div_community_read_content");
+  WebRSolidEdit.renderContent(contentEl, communityState.articleData.content);
+  if (contentEl) {
+    const categoryURL = String(communityState.articleData && communityState.articleData.category_url || "").trim().toLowerCase();
+    contentEl.classList.toggle("webr-rcommunity-digest-viewer", categoryURL === "rcommunity");
+  }
 }
 async function get_read_article(loadMode) {
   const request_data = new FormData();
