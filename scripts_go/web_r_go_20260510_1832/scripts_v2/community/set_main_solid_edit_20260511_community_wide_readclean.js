@@ -55,6 +55,18 @@ function getCommunityBaseUrl(boardUrl) {
   }
   return "/community/" + boardUrl + "/";
 }
+function syncCommunityReadContext(article) {
+  const rawCategory = String(article && (article.category_url || article.article_category_url) || "").trim().toLowerCase();
+  const knownCategory = ["free", "visitor", "rblogger", "rproject", "rcommunity", "notebook"].includes(rawCategory) ? rawCategory : "free";
+  url = knownCategory;
+  sub = "";
+  if (typeof window !== "undefined") {
+    window.url = knownCategory;
+    window.sub = "";
+  }
+  header_title = getCommunityHeaderTitle(knownCategory);
+  init_url = getCommunityBaseUrl(knownCategory);
+}
 function getCommunityHeaderTitle(boardUrl) {
   if (boardUrl === "all") {
     return "\uCEE4\uBBA4\uB2C8\uD2F0";
@@ -1094,6 +1106,7 @@ async function get_read_article(loadMode) {
       throw new Error(`get_read_article HTTP error: ${res.status}`);
     }
     communityState.articleData = await res.json();
+    syncCommunityReadContext(communityState.articleData);
     if (loadMode === "init") {
       set_article();
     }
