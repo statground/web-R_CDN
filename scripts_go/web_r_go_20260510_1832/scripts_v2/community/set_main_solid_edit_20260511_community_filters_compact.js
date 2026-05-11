@@ -1,9 +1,12 @@
 const COMMUNITY_FILE_DELETE_CLASS = "rounded-lg hover:bg-red-100 cursor-pointer";
 const COMMUNITY_COMMENT_FILE_DELETE_CLASS = "size-4 min-size-4 max-size-4 rounded-lg hover:bg-red-100 cursor-pointer";
 const COMMUNITY_PAGE_SIZE = 10;
+const COMMUNITY_PAGE_CACHE_TTL_MS = 9e4;
 const COMMUNITY_TABBED_URLS = ["all", "free", "rcommunity", "notebook", "mine", "commented"];
 let header_title = "";
 let header_subtitle = "\uCEE4\uBBA4\uB2C8\uD2F0";
+const communityArticlePageCache = {};
+const communityArticlePrefetching = {};
 const communityState = {
   page_num: 1,
   article_counter: 0,
@@ -731,6 +734,80 @@ function normalizedCommunityTagSub() {
   }
   return raw;
 }
+function communityArticlePageCacheKey(page, searchText) {
+  const viewer = [
+    typeof gv_username === "undefined" || gv_username == null ? "" : String(gv_username),
+    typeof window === "undefined" || window.gv_role == null ? "" : String(window.gv_role)
+  ].join(":");
+  return [normalizedCommunityTag(), normalizedCommunityTagSub(), String(searchText || "").trim(), viewer, String(page || 1)].join("|");
+}
+function readCommunityArticlePageCache(page, searchText) {
+  const key = communityArticlePageCacheKey(page, searchText);
+  const cached = communityArticlePageCache[key];
+  if (!cached || Date.now() - cached.at > COMMUNITY_PAGE_CACHE_TTL_MS) {
+    delete communityArticlePageCache[key];
+    return null;
+  }
+  return cached.data;
+}
+function writeCommunityArticlePageCache(page, searchText, data) {
+  communityArticlePageCache[communityArticlePageCacheKey(page, searchText)] = { at: Date.now(), data };
+}
+function buildCommunityArticleListForm(page, searchText) {
+  const requestData = new FormData();
+  requestData.append("tag", normalizedCommunityTag());
+  const tagSub = normalizedCommunityTagSub();
+  if (tagSub !== "") {
+    requestData.append("tag_sub", tagSub);
+  }
+  if (String(searchText || "").trim() !== "") {
+    requestData.append("txt_search", String(searchText || "").trim());
+  }
+  requestData.append("page", page);
+  return requestData;
+}
+async function fetchCommunityArticlePage(page, searchText) {
+  const data = await fetch("/blank/ajax_board/get_article_list/", {
+    method: "POST",
+    headers: { "X-CSRFToken": getCookie("csrftoken") },
+    body: buildCommunityArticleListForm(page, searchText)
+  }).then((res) => res.json());
+  writeCommunityArticlePageCache(page, searchText, data);
+  return data;
+}
+function prefetchCommunityArticlePages(currentPage, totalPages, searchText) {
+  const activeTag = normalizedCommunityTag();
+  if (activeTag === "mine" || activeTag === "commented") {
+    return;
+  }
+  const pages = [];
+  const addPage = (page) => {
+    const n = Number(page);
+    if (!Number.isFinite(n) || n < 1 || n > totalPages || n === currentPage || pages.includes(n)) {
+      return;
+    }
+    if (readCommunityArticlePageCache(n, searchText)) {
+      return;
+    }
+    pages.push(n);
+  };
+  addPage(currentPage + 1);
+  addPage(currentPage + 2);
+  addPage(currentPage - 1);
+  addPage(1);
+  pages.slice(0, 3).forEach((page) => {
+    const key = communityArticlePageCacheKey(page, searchText);
+    if (communityArticlePrefetching[key]) {
+      return;
+    }
+    communityArticlePrefetching[key] = true;
+    window.setTimeout(() => {
+      fetchCommunityArticlePage(page, searchText).catch(() => null).finally(() => {
+        delete communityArticlePrefetching[key];
+      });
+    }, 80);
+  });
+}
 function latestArticleMetaParts(article) {
   const parts = [];
   const author = article.user_nickname || "\uC791\uC131\uC790";
@@ -1057,11 +1134,32 @@ async function get_article_list(loadMode, requestedPage = 1) {
     return;
   }
   request_data.append("page", communityState.page_num);
+  const targetId = replaceMainList ? "div_article_list" : `div_article_list_${communityState.page_num}`;
+  const cachedData = replaceMainList ? readCommunityArticlePageCache(communityState.page_num, searchText) : null;
+  if (cachedData) {
+    communityState.article_counter = cachedData["count"] ? cachedData["count"].cnt : 0;
+    const totalPages = Math.max(1, Math.ceil(Number(communityState.article_counter || 0) / COMMUNITY_PAGE_SIZE));
+    const listData = cachedData && cachedData.list ? cachedData.list : {};
+    if (replaceMainList && Object.keys(listData).length === 0 && communityState.page_num > totalPages) {
+      await get_article_list("page", totalPages);
+      return;
+    }
+    ReactDOM.render(
+      /* @__PURE__ */ React.createElement(ArticleList, { data: listData, isMain: replaceMainList }),
+      document.getElementById(targetId)
+    );
+    communityState.toggle_page = false;
+    prefetchCommunityArticlePages(communityState.page_num, totalPages, searchText);
+    return;
+  }
   const data = await fetch("/blank/ajax_board/get_article_list/", {
     method: "POST",
     headers: { "X-CSRFToken": getCookie("csrftoken") },
     body: request_data
   }).then((res) => res.json());
+  if (replaceMainList) {
+    writeCommunityArticlePageCache(communityState.page_num, searchText, data);
+  }
   communityState.article_counter = data["count"] ? data["count"].cnt : 0;
   const totalPages = Math.max(1, Math.ceil(Number(communityState.article_counter || 0) / COMMUNITY_PAGE_SIZE));
   const listData = data && data.list ? data.list : {};
@@ -1069,12 +1167,12 @@ async function get_article_list(loadMode, requestedPage = 1) {
     await get_article_list("page", totalPages);
     return;
   }
-  const targetId = replaceMainList ? "div_article_list" : `div_article_list_${communityState.page_num}`;
   ReactDOM.render(
     /* @__PURE__ */ React.createElement(ArticleList, { data: listData, isMain: replaceMainList }),
     document.getElementById(targetId)
   );
   communityState.toggle_page = false;
+  prefetchCommunityArticlePages(communityState.page_num, totalPages, searchText);
 }
 async function goToArticlePage(page) {
   const nextPage = Math.max(1, Number(page || 1));
