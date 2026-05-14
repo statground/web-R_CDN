@@ -1,0 +1,801 @@
+function teamAdminText(value) {
+  if (value === null || value === undefined) return "";
+  return String(value);
+}
+
+function teamAdminNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function teamAdminFormatNumber(value) {
+  return teamAdminNumber(value).toLocaleString("ko-KR");
+}
+
+function teamAdminMoney(value) {
+  return teamAdminFormatNumber(value) + "원";
+}
+
+function teamAdminDateOnly(value) {
+  const text = teamAdminText(value).trim();
+  return text.length >= 10 ? text.slice(0, 10) : text;
+}
+
+function teamAdminStatus(member) {
+  if (teamAdminNumber(member && member.blocked) === 1) return "차단";
+  if (teamAdminNumber(member && member.is_active) === 0) return "비활성";
+  return "활성";
+}
+
+function teamAdminIsInternal(team) {
+  return teamAdminText(team && team.team_kind).indexOf("internal_") === 0;
+}
+
+const TEAM_ADMIN_SCOPES = {
+  team_members: {
+    title: "기관/팀 현황",
+    loading: "기관/팀 현황을 불러오고 있습니다.",
+    empty: "조건에 해당하는 기관/팀이 없습니다.",
+    searchPlaceholder: "팀명, 팀장, 팀원 검색",
+    teamKinds: ["paid"],
+    metrics: "paid"
+  },
+  admin_team: {
+    title: "관리자 계정",
+    loading: "관리자 계정을 불러오고 있습니다.",
+    empty: "관리자로 지정된 일반 계정이 없습니다.",
+    searchPlaceholder: "관리자로 지정할 기존 계정 검색",
+    teamKinds: ["internal_admin"],
+    metrics: "internal",
+    specialScope: "admin"
+  },
+  tester_team: {
+    title: "테스터 계정",
+    loading: "테스터 계정을 불러오고 있습니다.",
+    empty: "등록된 테스터 계정이 없습니다.",
+    searchPlaceholder: "테스터 계정 검색",
+    teamKinds: ["internal_tester"],
+    metrics: "internal",
+    specialScope: "tester"
+  },
+  bot_team: {
+    title: "Bot 계정",
+    loading: "Bot 계정을 불러오고 있습니다.",
+    empty: "등록된 Bot 계정이 없습니다.",
+    searchPlaceholder: "Bot 계정 검색",
+    teamKinds: ["internal_bot"],
+    metrics: "internal",
+    specialScope: "bot"
+  }
+};
+
+function teamAdminCurrentScope() {
+  const parts = window.location.pathname.split("/").filter(Boolean);
+  const key = parts[1] || "team_members";
+  return TEAM_ADMIN_SCOPES[key] ? key : "team_members";
+}
+
+function teamAdminScopeConfig(scopeKey) {
+  return TEAM_ADMIN_SCOPES[scopeKey] || TEAM_ADMIN_SCOPES.team_members;
+}
+
+function teamAdminPost(url, body) {
+  return fetch(url, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body: body.toString()
+  }).then(function (res) { return res.json(); }).then(function (data) {
+    if (data && data.ok === false) {
+      throw new Error(data.error || "처리할 수 없습니다.");
+    }
+    return data;
+  });
+}
+
+function Div_operation_menu() {
+  function Div_menu_button(props) {
+    return React.createElement("button", {
+      type: "button",
+      onClick: function () { location.href = props.url; },
+      className: "py-2.5 px-5 mr-2 mb-2 text-sm font-medium text-gray-900 bg-white rounded-lg border border-gray-200 focus:outline-none hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-200"
+    }, props.name);
+  }
+  const date = new Date();
+  return React.createElement("div", { className: "md:col-span-2 justify-center item-center" },
+    React.createElement("div", { className: "flex flex-row flex-wrap w-full md:flex-col md:w-48 item-center" },
+      React.createElement(Div_menu_button, { name: "첫 화면", url: "/admin/" }),
+      React.createElement(Div_menu_button, { name: "활성 사용자", url: "/admin/active_users/" }),
+      React.createElement(Div_menu_button, { name: "Web-R 접속 현황", url: "/admin/webr/" }),
+      React.createElement(Div_menu_button, { name: "방문 현황", url: "/admin/visitors/" }),
+      React.createElement(Div_menu_button, { name: "회원 현황", url: "/admin/members/" }),
+      React.createElement(Div_menu_button, { name: "기관/팀 현황", url: "/admin/team_members/" }),
+      React.createElement(Div_menu_button, { name: "관리자 팀", url: "/admin/admin_team/" }),
+      React.createElement(Div_menu_button, { name: "테스터 팀", url: "/admin/tester_team/" }),
+      React.createElement(Div_menu_button, { name: "Bot 팀", url: "/admin/bot_team/" }),
+      React.createElement(Div_menu_button, { name: "결제 현황", url: "/admin/payments/" }),
+      React.createElement(Div_menu_button, { name: "정산액 조회", url: "/admin/balance_account/" + date.getFullYear().toString() + "/" + (date.getMonth() + 1).toString() + "/" })
+    )
+  );
+}
+
+function TeamMetric(props) {
+  return React.createElement("div", { className: "flex flex-col items-center justify-center p-4" },
+    React.createElement("dt", { className: "text-3xl font-extrabold" }, props.value),
+    React.createElement("dd", { className: "font-light text-gray-500" }, props.title)
+  );
+}
+
+function TeamSummaryMetric(props) {
+  return React.createElement("div", { className: "rounded-md bg-slate-50 px-4 py-3" },
+    React.createElement("dt", { className: "text-sm font-semibold text-slate-500" }, props.title),
+    React.createElement("dd", { className: "mt-1 break-words text-2xl font-extrabold leading-tight text-slate-950" }, props.value)
+  );
+}
+
+function TeamSummaryGroup(props) {
+  const columnsClass = props.columns === 1 ? "grid-cols-1" : (props.columns === 2 ? "grid-cols-2" : "grid-cols-3");
+  return React.createElement("section", { className: "rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm" },
+    React.createElement("h3", { className: "mb-3 text-sm font-extrabold text-slate-900" }, props.title),
+    React.createElement("dl", { className: "grid " + columnsClass + " gap-3" }, props.children)
+  );
+}
+
+function SpecialAccountsApp(props) {
+  const scopeKey = teamAdminCurrentScope();
+  const scope = teamAdminScopeConfig(scopeKey);
+  const specialScope = scope.specialScope;
+  const [data, setData] = React.useState(props.data || {});
+  const [search, setSearch] = React.useState("");
+  const [createForm, setCreateForm] = React.useState({ email: "", nickname: "", realname: "", password: "" });
+  const [passwordByUUID, setPasswordByUUID] = React.useState({});
+  const [actionError, setActionError] = React.useState("");
+  const [loadingAction, setLoadingAction] = React.useState("");
+  const accounts = Array.isArray(data.accounts) ? data.accounts : [];
+  const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+  const currentUserUUID = teamAdminText(data.current_user_uuid);
+
+  function reload(nextQuery) {
+    const body = new URLSearchParams();
+    body.set("scope", specialScope);
+    body.set("q", teamAdminText(nextQuery));
+    return teamAdminPost("/admin/ajax_get_special_accounts/", body).then(function (nextData) {
+      setData(nextData);
+      return nextData;
+    });
+  }
+
+  function submitAdminSearch(event) {
+    event.preventDefault();
+    setActionError("");
+    setLoadingAction("search");
+    reload(search).catch(function (error) {
+      setActionError(error.message || "계정을 검색할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function assignAdmin(account) {
+    const userUUID = teamAdminText(account.uuid);
+    if (!userUUID) return;
+    const body = new URLSearchParams();
+    body.set("uuid", userUUID);
+    setActionError("");
+    setLoadingAction("assign:" + userUUID);
+    teamAdminPost("/admin/ajax_assign_admin_account/", body).then(function (nextData) {
+      setData(nextData);
+      setSearch("");
+    }).catch(function (error) {
+      setActionError(error.message || "관리자로 지정할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function revokeAdmin(account) {
+    const userUUID = teamAdminText(account.uuid);
+    if (!userUUID) return;
+    const body = new URLSearchParams();
+    body.set("uuid", userUUID);
+    setActionError("");
+    setLoadingAction("revoke:" + userUUID);
+    teamAdminPost("/admin/ajax_revoke_admin_account/", body).then(function (nextData) {
+      setData(nextData);
+    }).catch(function (error) {
+      setActionError(error.message || "관리자에서 해제할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function updateCreateField(name, value) {
+    setCreateForm(Object.assign({}, createForm, { [name]: value }));
+  }
+
+  function submitCreateSpecial(event) {
+    event.preventDefault();
+    const body = new URLSearchParams();
+    body.set("scope", specialScope);
+    body.set("email", createForm.email.trim());
+    body.set("nickname", createForm.nickname.trim());
+    body.set("realname", createForm.realname.trim());
+    body.set("password", createForm.password);
+    setActionError("");
+    setLoadingAction("create");
+    teamAdminPost("/admin/ajax_create_special_account/", body).then(function (nextData) {
+      setData(nextData);
+      setCreateForm({ email: "", nickname: "", realname: "", password: "" });
+    }).catch(function (error) {
+      setActionError(error.message || "계정을 생성할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function updateSpecialPassword(account) {
+    const userUUID = teamAdminText(account.uuid);
+    const password = teamAdminText(passwordByUUID[userUUID]);
+    if (!userUUID || !password) return;
+    const body = new URLSearchParams();
+    body.set("scope", specialScope);
+    body.set("uuid", userUUID);
+    body.set("password", password);
+    setActionError("");
+    setLoadingAction("password:" + userUUID);
+    teamAdminPost("/admin/ajax_update_special_account_password/", body).then(function (nextData) {
+      setData(nextData);
+      setPasswordByUUID(Object.assign({}, passwordByUUID, { [userUUID]: "" }));
+    }).catch(function (error) {
+      setActionError(error.message || "비밀번호를 변경할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function deactivateSpecial(account) {
+    const userUUID = teamAdminText(account.uuid);
+    if (!userUUID) return;
+    const body = new URLSearchParams();
+    body.set("scope", specialScope);
+    body.set("uuid", userUUID);
+    setActionError("");
+    setLoadingAction("deactivate:" + userUUID);
+    teamAdminPost("/admin/ajax_deactivate_special_account/", body).then(function (nextData) {
+      setData(nextData);
+    }).catch(function (error) {
+      setActionError(error.message || "계정을 삭제할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function renderStatus(account) {
+    return React.createElement("span", { className: "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold " + (teamAdminStatus(account) === "활성" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700") }, teamAdminStatus(account));
+  }
+
+  function renderAdminAccount(account) {
+    const userUUID = teamAdminText(account.uuid);
+    const locked = teamAdminNumber(account.admin_locked) === 1 || userUUID === currentUserUUID;
+    const loadingKey = "revoke:" + userUUID;
+    return React.createElement("tr", { key: userUUID, className: "border-b last:border-0 hover:bg-slate-50" },
+      React.createElement("td", { className: "px-3 py-2 font-semibold text-slate-950 whitespace-nowrap" }, account.email || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, account.nickname || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, account.realname || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminNumber(account.admin_locked) === 1 ? "시스템 관리자" : (account.role_name || "관리자")),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminDateOnly(account.date_joined) || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminDateOnly(account.last_login) || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, renderStatus(account)),
+      React.createElement("td", { className: "px-3 py-2 text-right whitespace-nowrap" },
+        React.createElement("button", {
+          type: "button",
+          disabled: locked || loadingAction === loadingKey,
+          onClick: function () { revokeAdmin(account); },
+          className: "rounded-md border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+        }, loadingAction === loadingKey ? "처리 중" : "해제")
+      )
+    );
+  }
+
+  function renderCandidate(account) {
+    const userUUID = teamAdminText(account.uuid);
+    const loadingKey = "assign:" + userUUID;
+    return React.createElement("div", { key: userUUID, className: "flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-3 md:flex-row md:items-center md:justify-between" },
+      React.createElement("div", { className: "min-w-0" },
+        React.createElement("p", { className: "truncate text-sm font-bold text-slate-950" }, account.email || "-"),
+        React.createElement("p", { className: "text-xs text-slate-500" }, account.nickname || "-", " / ", account.realname || "-", " / ", account.role_name || "준회원")
+      ),
+      React.createElement("button", {
+        type: "button",
+        disabled: loadingAction === loadingKey,
+        onClick: function () { assignAdmin(account); },
+        className: "rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+      }, loadingAction === loadingKey ? "처리 중" : "관리자 지정")
+    );
+  }
+
+  function renderSpecialAccount(account) {
+    const userUUID = teamAdminText(account.uuid);
+    const passwordValue = teamAdminText(passwordByUUID[userUUID]);
+    const active = teamAdminNumber(account.is_active) !== 0 && teamAdminNumber(account.blocked) === 0;
+    const passwordKey = "password:" + userUUID;
+    const deactivateKey = "deactivate:" + userUUID;
+    return React.createElement("tr", { key: userUUID, className: "border-b last:border-0 hover:bg-slate-50" },
+      React.createElement("td", { className: "px-3 py-2 font-semibold text-slate-950 whitespace-nowrap" }, account.email || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, account.nickname || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, account.realname || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, account.role_name || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminDateOnly(account.expired_at) || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminDateOnly(account.last_login) || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, renderStatus(account)),
+      React.createElement("td", { className: "px-3 py-2" },
+        React.createElement("div", { className: "flex min-w-[260px] gap-2" },
+          React.createElement("input", {
+            type: "password",
+            name: "webr-special-account-password-" + userUUID,
+            autoComplete: "new-password",
+            value: passwordValue,
+            disabled: !active,
+            onChange: function (event) {
+              setPasswordByUUID(Object.assign({}, passwordByUUID, { [userUUID]: event.target.value }));
+            },
+            placeholder: "새 비밀번호",
+            className: "min-w-0 flex-1 rounded-md border-slate-300 text-xs"
+          }),
+          React.createElement("button", {
+            type: "button",
+            disabled: !active || !passwordValue || loadingAction === passwordKey,
+            onClick: function () { updateSpecialPassword(account); },
+            className: "rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          }, loadingAction === passwordKey ? "처리 중" : "변경")
+        )
+      ),
+      React.createElement("td", { className: "px-3 py-2 text-right whitespace-nowrap" },
+        React.createElement("button", {
+          type: "button",
+          disabled: !active || loadingAction === deactivateKey,
+          onClick: function () { deactivateSpecial(account); },
+          className: "rounded-md border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+        }, loadingAction === deactivateKey ? "처리 중" : "삭제")
+      )
+    );
+  }
+
+  function renderAdminTools() {
+    return React.createElement("section", { className: "rounded-lg border border-slate-200 bg-white p-4 shadow-sm" },
+      React.createElement("form", { onSubmit: submitAdminSearch, autoComplete: "off", className: "flex flex-col gap-2 md:flex-row" },
+        React.createElement("input", {
+          type: "search",
+          name: "webr-admin-account-search",
+          autoComplete: "off",
+          value: search,
+          onChange: function (event) { setSearch(event.target.value); },
+          placeholder: scope.searchPlaceholder,
+          className: "min-w-0 flex-1 rounded-md border-slate-300 text-sm"
+        }),
+        React.createElement("button", {
+          type: "submit",
+          disabled: loadingAction === "search" || search.trim().length < 2,
+          className: "rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+        }, loadingAction === "search" ? "검색 중" : "검색")
+      ),
+      candidates.length > 0 ? React.createElement("div", { className: "mt-3 grid grid-cols-1 gap-3 md:grid-cols-2" }, candidates.map(renderCandidate)) : null
+    );
+  }
+
+  function renderCreateSpecialTools() {
+    return React.createElement("section", { className: "rounded-lg border border-slate-200 bg-white p-4 shadow-sm" },
+      React.createElement("form", { onSubmit: submitCreateSpecial, autoComplete: "off", className: "grid grid-cols-1 gap-2 md:grid-cols-5" },
+        React.createElement("input", {
+          type: "email",
+          name: "webr-special-account-email",
+          autoComplete: "off",
+          spellCheck: false,
+          value: createForm.email,
+          onChange: function (event) { updateCreateField("email", event.target.value); },
+          placeholder: "이메일",
+          className: "rounded-md border-slate-300 text-sm"
+        }),
+        React.createElement("input", {
+          type: "text",
+          name: "webr-special-account-nickname",
+          autoComplete: "off",
+          value: createForm.nickname,
+          onChange: function (event) { updateCreateField("nickname", event.target.value); },
+          placeholder: "닉네임",
+          className: "rounded-md border-slate-300 text-sm"
+        }),
+        React.createElement("input", {
+          type: "text",
+          name: "webr-special-account-realname",
+          autoComplete: "off",
+          value: createForm.realname,
+          onChange: function (event) { updateCreateField("realname", event.target.value); },
+          placeholder: "이름",
+          className: "rounded-md border-slate-300 text-sm"
+        }),
+        React.createElement("input", {
+          type: "password",
+          name: "webr-special-account-new-password",
+          autoComplete: "new-password",
+          value: createForm.password,
+          onChange: function (event) { updateCreateField("password", event.target.value); },
+          placeholder: "비밀번호",
+          className: "rounded-md border-slate-300 text-sm"
+        }),
+        React.createElement("button", {
+          type: "submit",
+          disabled: loadingAction === "create" || !createForm.email.trim() || !createForm.nickname.trim() || !createForm.password,
+          className: "rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+        }, loadingAction === "create" ? "처리 중" : "계정 추가")
+      )
+    );
+  }
+
+  function renderAccountTable() {
+    const isAdminScope = specialScope === "admin";
+    const rows = accounts;
+    return React.createElement("section", { className: "rounded-lg border border-gray-200 bg-white shadow" },
+      React.createElement("div", { className: "flex items-center justify-between border-b border-slate-200 p-4" },
+        React.createElement("h3", { className: "text-base font-extrabold text-slate-950" }, scope.title),
+        React.createElement("span", { className: "text-sm text-slate-500" }, teamAdminFormatNumber(rows.length), "개")
+      ),
+      rows.length === 0
+        ? React.createElement("div", { className: "p-8 text-center text-gray-500" }, scope.empty)
+        : React.createElement("div", { className: "w-full overflow-x-auto" },
+          React.createElement("table", { className: "min-w-full text-left text-xs text-gray-600 md:text-sm" },
+            React.createElement("thead", { className: "border-b bg-gray-50" },
+              isAdminScope ? React.createElement("tr", null,
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "이메일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "닉네임"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "이름"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "권한"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "가입일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "최근 로그인"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "상태"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap text-right" }, "관리")
+              ) : React.createElement("tr", null,
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "이메일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "닉네임"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "이름"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "현재 등급"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "만료일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "최근 로그인"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "상태"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "비밀번호"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap text-right" }, "관리")
+              )
+            ),
+            React.createElement("tbody", null, rows.map(isAdminScope ? renderAdminAccount : renderSpecialAccount))
+          )
+        )
+    );
+  }
+
+  return React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 justify-center item-center w-full px-[10px] py-[20px] md:px-[100px]" },
+    React.createElement(Div_operation_menu, null),
+    React.createElement("div", { className: "md:col-span-10 justify-center item-center" },
+      React.createElement("div", { className: "flex w-full flex-col gap-4" },
+        React.createElement("div", { className: "p-2 text-center md:p-4" },
+          React.createElement("h2", { className: "text-3xl font-extrabold leading-none tracking-tight text-gray-900" },
+            React.createElement("span", { className: "text-blue-600" }, scope.title)
+          )
+        ),
+        actionError ? React.createElement("p", { className: "rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" }, actionError) : null,
+        specialScope === "admin" ? renderAdminTools() : renderCreateSpecialTools(),
+        renderAccountTable()
+      )
+    )
+  );
+}
+
+function TeamMembersApp(props) {
+  const [data, setData] = React.useState(props.data || {});
+  const [memberEmailByTeam, setMemberEmailByTeam] = React.useState({});
+  const [actionError, setActionError] = React.useState("");
+  const [loadingAction, setLoadingAction] = React.useState("");
+  const scopeKey = teamAdminCurrentScope();
+  const scope = teamAdminScopeConfig(scopeKey);
+  const teams = Array.isArray(data.teams) ? data.teams : [];
+  const [search, setSearch] = React.useState("");
+  const normalizedSearch = search.trim().toLowerCase();
+  const scopedTeams = React.useMemo(function () {
+    if (!Array.isArray(scope.teamKinds)) return teams;
+    return teams.filter(function (team) {
+      return scope.teamKinds.indexOf(teamAdminText(team.team_kind)) >= 0;
+    });
+  }, [teams, scopeKey]);
+  const scopedSummary = React.useMemo(function () {
+    return scopedTeams.reduce(function (acc, team) {
+      const teamKind = teamAdminText(team.team_kind);
+      acc.team_count += 1;
+      acc.seat_limit_total += teamAdminNumber(team.seat_limit);
+      acc.seat_used_total += teamAdminNumber(team.seat_used);
+      acc.remaining_total += teamAdminNumber(team.remaining);
+      acc.team_member_total += teamAdminNumber(team.active_member_count);
+      acc.ledger_amount_total += teamAdminNumber(team.ledger_amount);
+      if (teamAdminIsInternal(team)) {
+        acc.internal_team_total += 1;
+      } else if (teamAdminText(team.member_role_name) === "VIP회원") {
+        acc.vip_team_total += 1;
+      } else {
+        acc.regular_team_total += 1;
+      }
+      if (teamKind === "internal_admin") acc.admin_team_total += 1;
+      if (teamKind === "internal_tester") acc.tester_team_total += 1;
+      if (teamKind === "internal_bot") acc.bot_team_total += 1;
+      return acc;
+    }, {
+      team_count: 0,
+      seat_limit_total: 0,
+      seat_used_total: 0,
+      remaining_total: 0,
+      team_member_total: 0,
+      ledger_amount_total: 0,
+      regular_team_total: 0,
+      vip_team_total: 0,
+      internal_team_total: 0,
+      admin_team_total: 0,
+      tester_team_total: 0,
+      bot_team_total: 0
+    });
+  }, [scopedTeams]);
+  const displaySummary = scopedSummary;
+  const filteredTeams = React.useMemo(function () {
+    if (!normalizedSearch) return scopedTeams;
+    return scopedTeams.filter(function (team) {
+      const members = Array.isArray(team.members) ? team.members : [];
+      const ownerTeamMembers = Array.isArray(team.owner_team_members) ? team.owner_team_members : [];
+      const haystack = [
+        team.team_name,
+        team.member_role_name,
+        team.team_kind_label,
+        team.owner_team_name,
+        team.owner_team_kind,
+        team.owner_email,
+        team.owner_nickname,
+        team.owner_realname
+      ].concat(members.flatMap(function (member) {
+        return [member.email, member.nickname, member.realname, member.role];
+      })).concat(ownerTeamMembers.flatMap(function (member) {
+        return [member.email, member.nickname, member.realname, member.role];
+      })).map(function (value) {
+        return teamAdminText(value).toLowerCase();
+      }).join(" ");
+      return haystack.includes(normalizedSearch);
+    });
+  }, [scopedTeams, normalizedSearch]);
+
+  function submitInternalMember(team, event) {
+    event.preventDefault();
+    const teamUUID = teamAdminText(team.team_uuid);
+    const email = teamAdminText(memberEmailByTeam[teamUUID]).trim();
+    if (!email) return;
+    const body = new URLSearchParams();
+    body.set("team_uuid", teamUUID);
+    body.set("email", email);
+    setActionError("");
+    setLoadingAction("add:" + teamUUID);
+    teamAdminPost("/admin/ajax_add_admin_team_member/", body).then(function (nextData) {
+      setData(nextData);
+      setMemberEmailByTeam(Object.assign({}, memberEmailByTeam, { [teamUUID]: "" }));
+    }).catch(function (error) {
+      setActionError(error.message || "팀원을 추가할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function removeInternalMember(team, member) {
+    const teamUUID = teamAdminText(team.team_uuid);
+    const memberUUID = teamAdminText(member.uuid);
+    if (!teamUUID || !memberUUID) return;
+    const body = new URLSearchParams();
+    body.set("team_uuid", teamUUID);
+    body.set("member_uuid", memberUUID);
+    setActionError("");
+    setLoadingAction("remove:" + teamUUID + ":" + memberUUID);
+    teamAdminPost("/admin/ajax_remove_admin_team_member/", body).then(function (nextData) {
+      setData(nextData);
+    }).catch(function (error) {
+      setActionError(error.message || "팀원을 해제할 수 없습니다.");
+    }).finally(function () {
+      setLoadingAction("");
+    });
+  }
+
+  function renderOwnerTeamMember(member) {
+    return React.createElement("span", {
+      key: teamAdminText(member.uuid),
+      className: "inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"
+    }, member.email || "-", " / ", member.nickname || "-");
+  }
+
+  function renderMember(team, member) {
+    const isOwner = teamAdminNumber(member.is_owner) === 1;
+    const isInternal = teamAdminIsInternal(team);
+    const canRemove = isInternal && !isOwner;
+    const removeKey = "remove:" + teamAdminText(team.team_uuid) + ":" + teamAdminText(member.uuid);
+    return React.createElement("tr", { key: teamAdminText(member.uuid) + (isOwner ? "-owner" : ""), className: "border-b last:border-0 hover:bg-slate-50" },
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" },
+        React.createElement("span", { className: "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold " + (isOwner ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-700") }, isOwner ? "팀장" : "팀원")
+      ),
+      React.createElement("td", { className: "px-3 py-2 font-semibold text-slate-950 whitespace-nowrap" }, member.email || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, member.nickname || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, member.realname || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, member.role || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminDateOnly(member.expired_at) || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminDateOnly(member.joined_at) || "-"),
+      React.createElement("td", { className: "px-3 py-2 whitespace-nowrap" }, teamAdminStatus(member)),
+      isInternal ? React.createElement("td", { className: "px-3 py-2 whitespace-nowrap text-right" },
+        canRemove ? React.createElement("button", {
+          type: "button",
+          disabled: loadingAction === removeKey,
+          onClick: function () { removeInternalMember(team, member); },
+          className: "rounded-md border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+        }, loadingAction === removeKey ? "처리 중" : "해제") : "-"
+      ) : null
+    );
+  }
+
+  function renderTeam(team) {
+    const isInternal = teamAdminIsInternal(team);
+    const ownerTeamMembers = Array.isArray(team.owner_team_members) ? team.owner_team_members : [];
+    const allMembers = Array.isArray(team.members) ? team.members : [];
+    const members = allMembers;
+    const teamUUID = teamAdminText(team.team_uuid);
+    const inputValue = teamAdminText(memberEmailByTeam[teamUUID]);
+    const ownerTeamName = teamAdminText(team.owner_team_name).trim();
+    const ownerLabel = ownerTeamName
+      ? ownerTeamName + " (팀)"
+      : (teamAdminText(team.owner_email) || "-") + " / " + (teamAdminText(team.owner_nickname) || "-");
+    return React.createElement("section", { key: team.team_uuid, className: "w-full rounded-lg border border-gray-200 bg-white shadow" },
+      React.createElement("div", { className: "flex flex-col gap-4 p-4 md:p-6" },
+        React.createElement("div", { className: "flex flex-col gap-2 md:flex-row md:items-start md:justify-between" },
+          React.createElement("div", null,
+            React.createElement("h3", { className: "text-xl font-extrabold text-slate-950" }, team.team_name || "이름 없는 팀"),
+            React.createElement("p", { className: "text-sm text-slate-500" }, "팀장: ", ownerLabel)
+          ),
+          React.createElement("div", { className: "flex flex-wrap gap-2 text-sm" },
+            React.createElement("span", { className: "rounded-md border border-slate-200 bg-slate-50 px-3 py-1" }, "좌석 ", teamAdminFormatNumber(team.seat_used), " / ", teamAdminFormatNumber(team.seat_limit)),
+            React.createElement("span", { className: "rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1 text-indigo-700" }, "팀원 등급 ", team.member_role_name || "정회원"),
+            isInternal ? React.createElement("span", { className: "rounded-md border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700" }, team.team_kind_label || "내부팀") : null,
+            React.createElement("span", { className: "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700" }, "잔여 ", teamAdminFormatNumber(team.remaining)),
+            React.createElement("span", { className: "rounded-md border border-slate-200 bg-slate-50 px-3 py-1" }, "만료 ", teamAdminDateOnly(team.expires_at) || "-")
+          )
+        ),
+        React.createElement("div", { className: "grid grid-cols-1 gap-3 md:grid-cols-5" },
+          React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "팀원 등급"), React.createElement("p", { className: "text-lg font-bold" }, team.member_role_name || "정회원")),
+          React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "구매 좌석"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminFormatNumber(team.ledger_seats), "석")),
+          React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "결제 합계"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminMoney(team.ledger_amount))),
+          React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "팀원 수"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminFormatNumber(team.active_member_count), "명")),
+          React.createElement("div", { className: "rounded-md bg-slate-50 p-3" }, React.createElement("p", { className: "text-xs text-slate-500" }, "최근 결제"), React.createElement("p", { className: "text-lg font-bold" }, teamAdminDateOnly(team.last_payment_at) || "-"))
+        ),
+        isInternal && ownerTeamMembers.length > 0 ? React.createElement("div", { className: "rounded-md border border-blue-100 bg-blue-50/40 p-3" },
+          React.createElement("p", { className: "mb-2 text-xs font-semibold text-blue-900" }, "팀장 팀 구성원"),
+          React.createElement("div", { className: "flex flex-wrap gap-2" }, ownerTeamMembers.map(renderOwnerTeamMember))
+        ) : null,
+        isInternal ? React.createElement("form", { onSubmit: function (event) { submitInternalMember(team, event); }, className: "flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 md:flex-row md:items-center" },
+          React.createElement("input", {
+            type: "email",
+            value: inputValue,
+            onChange: function (event) {
+              setMemberEmailByTeam(Object.assign({}, memberEmailByTeam, { [teamUUID]: event.target.value }));
+            },
+            placeholder: "추가할 계정 이메일",
+            className: "min-w-0 flex-1 rounded-md border-slate-300 text-sm"
+          }),
+          React.createElement("button", {
+            type: "submit",
+            disabled: loadingAction === "add:" + teamUUID || !inputValue.trim(),
+            className: "rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+          }, loadingAction === "add:" + teamUUID ? "처리 중" : "팀원 추가")
+        ) : null,
+        React.createElement("div", { className: "w-full overflow-x-auto" },
+          React.createElement("table", { className: "min-w-full text-left text-xs text-gray-600 md:text-sm" },
+            React.createElement("thead", { className: "border-b bg-gray-50" },
+              React.createElement("tr", null,
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "구분"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "이메일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "닉네임"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "이름"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "등급"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "만료일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "등록일"),
+                React.createElement("th", { className: "px-3 py-2 whitespace-nowrap" }, "상태"),
+                isInternal ? React.createElement("th", { className: "px-3 py-2 whitespace-nowrap text-right" }, "관리") : null
+              )
+            ),
+            React.createElement("tbody", null, members.map(function (member) { return renderMember(team, member); }))
+          )
+        )
+      )
+    );
+  }
+
+  function renderSummaryMetrics() {
+    if (scope.metrics === "internal") {
+      return null;
+    }
+    return React.createElement("div", { className: "grid grid-cols-1 gap-4 p-4 md:grid-cols-3 md:p-3" },
+      React.createElement(TeamSummaryGroup, { title: "팀 구성", columns: 3 },
+        React.createElement(TeamSummaryMetric, { key: "team_count", title: "전체", value: teamAdminFormatNumber(displaySummary.team_count) + "팀" }),
+        React.createElement(TeamSummaryMetric, { key: "regular", title: "정회원 팀", value: teamAdminFormatNumber(displaySummary.regular_team_total) + "팀" }),
+        React.createElement(TeamSummaryMetric, { key: "vip", title: "VIP회원 팀", value: teamAdminFormatNumber(displaySummary.vip_team_total) + "팀" })
+      ),
+      React.createElement(TeamSummaryGroup, { title: "좌석", columns: 3 },
+        React.createElement(TeamSummaryMetric, { key: "seat_limit", title: "총 좌석", value: teamAdminFormatNumber(displaySummary.seat_limit_total) + "석" }),
+        React.createElement(TeamSummaryMetric, { key: "seat_used", title: "사용", value: teamAdminFormatNumber(displaySummary.seat_used_total) + "석" }),
+        React.createElement(TeamSummaryMetric, { key: "remaining", title: "잔여", value: teamAdminFormatNumber(displaySummary.remaining_total) + "석" })
+      ),
+      React.createElement(TeamSummaryGroup, { title: "결제", columns: 1 },
+        React.createElement(TeamSummaryMetric, { key: "ledger", title: "결제 합계", value: teamAdminMoney(displaySummary.ledger_amount_total) })
+      )
+    );
+  }
+
+  return React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 justify-center item-center w-full px-[10px] py-[20px] md:px-[100px]" },
+    React.createElement(Div_operation_menu, null),
+    React.createElement("div", { className: "md:col-span-10 justify-center item-center" },
+      React.createElement("div", { className: "flex w-full flex-col gap-4" },
+        React.createElement("div", { className: "w-full" },
+          React.createElement("div", { className: "p-2 text-center md:p-4" },
+            React.createElement("h2", { className: (scope.metrics === "internal" ? "mb-0" : "mb-4") + " text-3xl font-extrabold leading-none tracking-tight text-gray-900" },
+              React.createElement("span", { className: "text-blue-600" }, scope.title)
+            ),
+            renderSummaryMetrics()
+          )
+        ),
+        React.createElement("div", { className: "flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3" },
+          actionError ? React.createElement("p", { className: "rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" }, actionError) : null,
+          React.createElement("input", {
+            type: "search",
+            value: search,
+            onChange: function (event) { setSearch(event.target.value); },
+            placeholder: scope.searchPlaceholder,
+            className: "w-full rounded-md border-slate-300 text-sm"
+          }),
+          React.createElement("p", { className: "text-sm text-slate-500" }, "총 ", teamAdminFormatNumber(scopedTeams.length), "팀 중 ", teamAdminFormatNumber(filteredTeams.length), "팀 표시")
+        ),
+        filteredTeams.length === 0
+          ? React.createElement("div", { className: "rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500" }, scope.empty)
+          : filteredTeams.map(renderTeam)
+      )
+    )
+  );
+}
+
+async function set_main() {
+  const mount = document.getElementById("div_main");
+  if (!mount) return;
+  if (!(window.gv_username || "")) {
+    location.href = "/";
+    return;
+  }
+  const scope = teamAdminScopeConfig(teamAdminCurrentScope());
+  ReactDOM.render(React.createElement("div", { className: "max-w-screen-xl px-6 py-10 mx-auto text-center text-gray-500" }, scope.loading), mount);
+  try {
+    const headerData = await fetch("/ajax_get_menu_header/", { method: "POST", credentials: "same-origin" }).then(function (res) { return res.json(); });
+    const role = headerData && headerData.role ? headerData.role : "";
+    window.gv_role = role;
+    if (role !== "관리자") {
+      ReactDOM.render(React.createElement("div", { className: "max-w-screen-xl px-6 py-10 mx-auto text-center text-gray-500" }, "관리자를 위한 메뉴입니다."), mount);
+      return;
+    }
+    let data;
+    if (scope.specialScope) {
+      const body = new URLSearchParams();
+      body.set("scope", scope.specialScope);
+      data = await teamAdminPost("/admin/ajax_get_special_accounts/", body);
+    } else {
+      data = await fetch("/admin/ajax_get_admin_team_members/", { method: "POST", credentials: "same-origin" }).then(function (res) { return res.json(); });
+    }
+    if (data && data.ok === false) {
+      throw new Error(data.error || scope.title + "을 불러올 수 없습니다.");
+    }
+    ReactDOM.render(React.createElement(scope.specialScope ? SpecialAccountsApp : TeamMembersApp, { data: data }), mount);
+  } catch (error) {
+    console.error(error);
+    ReactDOM.render(React.createElement("div", { className: "max-w-screen-xl px-6 py-10 mx-auto text-center text-red-600" }, error.message || "기관/팀 현황을 불러오는 중 오류가 발생했습니다."), mount);
+  }
+}
