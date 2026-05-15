@@ -1165,7 +1165,7 @@ function DivCommunityTopTools() {
   )), /* @__PURE__ */ React.createElement(RCommunitySourceFilters, null), /* @__PURE__ */ React.createElement("form", { class: "flex flex-col gap-2", onSubmit: (event) => {
     event.preventDefault();
     click_btn_search();
-  } }, /* @__PURE__ */ React.createElement(SearchScopeOptions, null), /* @__PURE__ */ React.createElement("div", { class: "flex flex-col gap-2 md:flex-row" }, /* @__PURE__ */ React.createElement(
+  } }, /* @__PURE__ */ React.createElement(SearchScopeOptions, null), /* @__PURE__ */ React.createElement("div", { class: "flex flex-col gap-2 md:flex-row md:items-stretch" }, /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "text",
@@ -1174,15 +1174,14 @@ function DivCommunityTopTools() {
       onChange: (event) => {
         communityState.searchText = event.currentTarget.value;
       },
-      class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-blue-500 focus:border-blue-500",
+      class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full min-w-0 md:w-auto md:flex-1 p-2.5 focus:ring-blue-500 focus:border-blue-500",
       placeholder: "\uCEE4\uBBA4\uB2C8\uD2F0 \uAE00 \uAC80\uC0C9"
     }
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
-      type: "button",
-      onClick: () => click_btn_search(),
-      class: "text-white bg-gradient-to-r from-cyan-500 to-blue-500 font-medium rounded-lg text-sm px-5 py-2.5 text-center hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300"
+      type: "submit",
+      class: "w-full shrink-0 whitespace-nowrap text-white bg-gradient-to-r from-cyan-500 to-blue-500 font-medium rounded-lg text-sm px-5 py-2.5 text-center hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 md:w-auto"
     },
     "\uAC80\uC0C9"
   ))));
