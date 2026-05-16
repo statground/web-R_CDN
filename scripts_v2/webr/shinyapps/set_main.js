@@ -245,7 +245,7 @@ function set_main() {
         }, [currentUrl]);
 
         return (
-            <div className="flex flex-col justify-center items-center py-8 px-20 w-full max-w-screen-sm mx-auto md:px-8">
+            <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-6 py-8">
                 <Div_page_header title={resolveWebrSubtitle(currentUrl)} subtitle="Web-R 접속" />
 
                 <div id="div_app_list" className="w-full">

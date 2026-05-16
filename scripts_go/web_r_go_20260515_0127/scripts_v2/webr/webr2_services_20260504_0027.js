@@ -66,7 +66,7 @@ function set_main() {
     }
   ];
   function WebR2ServicesApp() {
-    return /* @__PURE__ */ React.createElement("div", { className: "min-h-[calc(100vh-130px)] bg-slate-50" }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: "Web-R 2.0", subtitle: "\uBE0C\uB77C\uC6B0\uC800\uC5D0\uC11C R\uC744 \uC2E4\uD589\uD558\uB294 WebAssembly \uAE30\uBC18 \uC11C\uBE44\uC2A4 \uBAA9\uB85D\uC785\uB2C8\uB2E4." }), /* @__PURE__ */ React.createElement("main", { className: "grid grid-cols-1 gap-4 lg:grid-cols-2" }, services.map((service) => /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "min-h-[calc(100vh-130px)] bg-slate-50" }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8" }, /* @__PURE__ */ React.createElement(Div_page_header, { title: "Web-R 2.0", subtitle: "\uBE0C\uB77C\uC6B0\uC800\uC5D0\uC11C R\uC744 \uC2E4\uD589\uD558\uB294 WebAssembly \uAE30\uBC18 \uC11C\uBE44\uC2A4 \uBAA9\uB85D\uC785\uB2C8\uB2E4." }), /* @__PURE__ */ React.createElement("main", { className: "grid grid-cols-1 gap-4 lg:grid-cols-2" }, services.map((service) => /* @__PURE__ */ React.createElement(
       "a",
       {
         key: service.key,
